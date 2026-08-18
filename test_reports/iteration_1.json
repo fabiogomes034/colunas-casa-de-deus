@@ -1,0 +1,36 @@
+{
+  "summary": "First full end-to-end review of 'Colunas da Casa de Deus'. Backend: 27/27 pytest tests passed (100%) covering /api/config, member CRUD with tier amount enforcement, whatsapp/name/amount validation, mark-paid transition, JWT auth (login success/failure, /me), and all admin routes (list with level+status filters, confirm, reset, stats) with auth guards. Frontend: Full mobile flow verified end-to-end — Home → Levels → Register (BR phone mask '(41) 99224-6602') → Payment (PIX key visible, QR SVG rendered, Copy button, 'Já realizei o pagamento' transitions to certificate) → Certificate (name, tier label, blessing, church name rendered). Admin login rejects wrong password with visible 'Usuário ou senha inválidos', accepts correct creds and lands on /admin/dashboard showing stats (Total/Aguardando/Confirmados), level+status filter chips, member cards; Confirmar button updates status to 'Confirmado'. No critical bugs found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/members", "issue": "For named tiers (bronze/prata/ouro) the server overrides amount, but Pydantic's amount>=10 validator still runs first; sending amount<10 with level=ouro returns 422 instead of accepting and forcing 100. Cosmetic — frontend always sends the correct amount, so it does not affect real flow."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "global", "issues": ["Non-blocking React Native web console warnings: 'shadow* style props are deprecated (use boxShadow)' and 'props.pointerEvents is deprecated (use style.pointerEvents)'. Cosmetic RN 0.7x deprecation warnings only."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "(Optional) Silence RN web deprecation warnings by migrating shadow* → boxShadow style and props.pointerEvents → style.pointerEvents where applicable.",
+    "(Optional) Consider allowing amount<10 in the Pydantic validator when level is a named tier, since the server force-overrides the amount anyway (edge case only)."
+  ],
+  "critical_code_review_comments": [
+    "server.py is a single 314-line file — acceptable size, well-structured with clear sections (Models/Helpers/Public/Auth/Admin).",
+    "MongoDB _id is properly excluded via projection {'_id': 0} and serialize_member — no ObjectId leaks.",
+    "JWT uses HS256 with env-provided secret and 720min expiry; admin password hashed at startup with bcrypt (in-memory only) — good.",
+    "All URLs come from env; frontend uses EXPO_PUBLIC_BACKEND_URL correctly.",
+    "All interactive elements observed carry testID (register-name-input, register-phone-input, register-submit, custom-value-input, back-button, etc.)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (27/27)", "frontend": "100% (all critical flows: home, levels, register+mask, payment+PIX+QR+copy+mark-paid, certificate, admin wrong/correct login, dashboard stats/filters, confirm)"},
+  "seed_data_creation": "Created several TEST_-prefixed members (TEST_Bronze User, TEST_Prata, TEST_Ouro2, TEST_Outro, TEST_MarkPaid, TEST_Confirm, TEST_UI_Flow) in the members collection during automated tests; safe to leave or purge with a query on name prefix 'TEST_'.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend URL: https://projeto-colunas.preview.emergentagent.com (all API endpoints prefixed with /api). Admin creds in /app/memory/test_credentials.md. Regression suite at /app/backend/tests/backend_test.py runs in <5s in parallel. Frontend register submit label is 'Ir para o PIX' (not 'Continuar' or 'Cadastrar'). Use data-testid selectors: register-name-input / register-phone-input / register-submit. Levels page has a lingering custom-value-input at DOM index 0 when using generic input locators — always prefer testID selectors.",
+  "rca_of_issue": "N/A — no functional issues found."
+}

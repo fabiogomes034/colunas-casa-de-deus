@@ -1,0 +1,181 @@
+{
+  "app_name": "Colunas da Casa de Deus",
+  "personality": "6 Glass / Luxe DARK (Customized for Tech/SaaS)",
+  "personality_one_liner": "A welcoming, high-contrast modern SaaS aesthetic with clean white glass cards floating over a deep navy background, designed to feel elegant and simple for all ages.",
+  "color": {
+    "surface": "#0B1120",
+    "onSurface": "#F9FAFB",
+    "surfaceSecondary": "#FFFFFF",
+    "onSurfaceSecondary": "#0B1120",
+    "surfaceTertiary": "#F3F4F6",
+    "onSurfaceTertiary": "#1F2937",
+    "surfaceInverse": "#FFFFFF",
+    "onSurfaceInverse": "#0B1120",
+    "brand": "#2563EB",
+    "brandPrimary": "#2563EB",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#3B82F6",
+    "onBrandSecondary": "#FFFFFF",
+    "brandTertiary": "#DBEAFE",
+    "onBrandTertiary": "#1E3A8A",
+    "success": "#10B981",
+    "onSuccess": "#FFFFFF",
+    "warning": "#F59E0B",
+    "onWarning": "#FFFFFF",
+    "error": "#EF4444",
+    "onError": "#FFFFFF",
+    "info": "#3B82F6",
+    "onInfo": "#FFFFFF",
+    "border": "#E5E7EB",
+    "borderStrong": "#D1D5DB",
+    "divider": "#E5E7EB",
+    "tierBronze": "#CD7F32",
+    "tierSilver": "#C0C0C0",
+    "tierGold": "#D4AF37"
+  },
+  "typography": {
+    "displayFontFamily": "Plus Jakarta Sans",
+    "textFontFamily": "Plus Jakarta Sans",
+    "scale": {
+      "sm": 12,
+      "base": 16,
+      "lg": 18,
+      "xl": 24,
+      "2xl": 32
+    }
+  },
+  "spacing": {
+    "rule": "Generous whitespace. Minimalist SaaS landing page style. Use xl and 2xl for section gaps to ensure clarity for all ages.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "pill": 999
+  },
+  "shadow_tier": "2",
+  "navigation": "stack_only",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Use light glassmorphism on the white cards (e.g., rgba(255,255,255,0.9) to 0.98) so they 'float' on the dark navy background.",
+      "Apply subtle translucent effects to floating headers or sticky bottom CTAs."
+    ],
+    "dont's": [
+      "No heavy shadows or excessive glow.",
+      "Avoid muddy textures; keep the glass clean and corporate."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Home",
+      "purpose": "Church Identity Home with project title and Bible verse (2 Corinthians 9:7).",
+      "states": {
+        "loading": "Centered spinner",
+        "empty": "N/A",
+        "error": "Error loading content + Retry button"
+      },
+      "layout": "Full-bleed dark gradient background (#0B1120 to #111827). Hero section with abstract church pillar image, masked with a gradient scrim. Clean, large typography (24px+) for the project title and verse. Sticky vibrant blue primary CTA ('Quero Contribuir') at the bottom."
+    },
+    {
+      "name": "Level Selection",
+      "purpose": "Select contribution level (Bronze, Silver, Gold) or custom amount.",
+      "states": {
+        "loading": "Skeleton cards",
+        "empty": "N/A",
+        "error": "Error loading tiers + Retry button"
+      },
+      "layout": "Scrollable vertical list. 3 large stacked cards using surfaceSecondary (white). EACH card uses its respective metal color (tierBronze, tierSilver, tierGold) for its border, icon, and CTA button, overriding the brand color. Below the 3 cards, an input field row for 'Semear Outro Valor' (min R$10)."
+    },
+    {
+      "name": "Registration",
+      "purpose": "Quick registration collecting Name and Phone.",
+      "states": {
+        "loading": "Spinner on submit button",
+        "empty": "N/A",
+        "error": "Validation errors inline"
+      },
+      "layout": "Simple white card floating on the dark background. Large input fields with labels. Phone input must apply a Brazilian phone mask. Big primary CTA (minHeight 48px)."
+    },
+    {
+      "name": "Pix Payment",
+      "purpose": "Display PIX payment instructions and QR code.",
+      "states": {
+        "loading": "Spinner while generating Pix payload",
+        "empty": "N/A",
+        "error": "Failed to generate Pix + Retry button"
+      },
+      "layout": "Visual hierarchy: Total Amount (large) -> Merchant Name -> Prominent 'Copiar Chave Pix' button (vibrant blue) -> QR Code (secondary visual). Bottom area contains 'Já paguei' button and a 'WhatsApp reminder' link."
+    },
+    {
+      "name": "Certificate",
+      "purpose": "View and share the digital gratitude certificate.",
+      "states": {
+        "loading": "Generating image spinner",
+        "empty": "N/A",
+        "error": "Failed to load certificate + Retry button"
+      },
+      "layout": "Use react-native-view-shot. A beautifully framed digital card (using the digital certificate abstract background image) showing the member's name and the chosen level. The level's specific metal color should accent the certificate. Share button positioned below the shot view."
+    },
+    {
+      "name": "Admin Login",
+      "purpose": "Pastor/Admin authentication panel.",
+      "states": {
+        "loading": "Spinner on login button",
+        "empty": "N/A",
+        "error": "Invalid credentials message"
+      },
+      "layout": "Minimalist login form centered on screen. Password input and 'Entrar' CTA."
+    },
+    {
+      "name": "Admin Dashboard",
+      "purpose": "List of members and payment confirmation.",
+      "states": {
+        "loading": "Skeleton list rows",
+        "empty": "No members registered yet.",
+        "error": "Failed to load list + Retry button"
+      },
+      "layout": "List view of members with filters. Each row shows member name, level, phone, and a toggle/button to 'Mark as confirmed'. Light cards on dark background."
+    }
+  ],
+  "images": {
+    "home_hero": {
+      "url": "https://images.unsplash.com/photo-1676302643892-539340907647?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwyfHxjaHVyY2glMjBwaWxsYXIlMjBhcmNoaXRlY3R1cmUlMjBkYXJrfGVufDB8fHx8MTc4NzA5MDYxMnww&ixlib=rb-4.1.0&q=85",
+      "alt": "Dramatic row of architectural pillars lit in the dark"
+    },
+    "certificate_bg": {
+      "url": "https://images.unsplash.com/photo-1757466762489-52fea38071ad?crop=entropy&cs=srgb&fm=jpg&ixid=M3w8NTYxODd8MHwxfHNlYXJjaHwzfHxkaWdpdGFsJTIwY2VydGlmaWNhdGUlMjBhYnN0cmFjdCUyMHBhdHRlcm4lMjBkYXJrfGVufDB8fHx8MTc4NzA5MDYxMnww&ixlib=rb-4.1.0&q=85",
+      "alt": "Abstract blue waves of glowing particles"
+    }
+  },
+  "instructions_to_main_agent": [
+    "CRITICAL: The background of the entire app is a dark navy-to-graphite gradient (#0B1120 to #111827). Do NOT use a white background.",
+    "CRITICAL: Cards (surfaceSecondary) are light/white (#FFFFFF) with dark text, floating on top of the dark background. Use light glassmorphism on these cards to soften their appearance.",
+    "Typography MUST follow the user's requirement: Base size is minimum 16px. Titles are minimum 24px. The scale in typography reflects this.",
+    "Buttons must have a minimum height of 48px. Ensure they are large and easily tappable for all ages.",
+    "On the 'Level Selection' screen, the primary color of each card (borders, icons, CTA buttons) MUST use its specific tier metal color (tierBronze, tierSilver, tierGold). Do not use the vibrant blue brand color for these specific tier cards.",
+    "For the Pix Payment screen, UX research dictates that the 'Copiar Chave Pix' button must be the primary action, visually prioritized over the QR code, as most users will pay on the same device.",
+    "Digital Certificate must be exportable. Use `react-native-view-shot` to capture the view and `expo-sharing` to share it. Apply the `certificate_bg` image underneath the certificate content with a dark gradient scrim.",
+    "Forms must be simple. Use a Brazilian phone mask for the phone input field."
+  ]
+}
