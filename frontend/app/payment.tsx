@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import QRCode from "react-native-qrcode-svg";
 
+import { api, Level } from "@/src/lib/api";
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
 import { colors, spacing, radius, font, tierMeta, formatBRL, TierKey } from "@/src/lib/theme";
@@ -25,13 +26,15 @@ export default function Payment() {
     id?: string;
     name?: string;
     phone?: string;
+    whatsapp?: string;
     tier?: string;
+    level?: string;
     amount?: string;
   }>();
 
   const name = params.name || "Contribuinte";
-  const phone = params.phone || "";
-  const tierKey = (params.tier as TierKey) || "prata";
+  const whatsapp = params.whatsapp || params.phone || "";
+  const tierKey = ((params.level || params.tier || "prata") as TierKey).toLowerCase() as TierKey;
   const meta = tierMeta[tierKey] || tierMeta.prata;
   const amount = Number(params.amount) || meta.amount;
 
@@ -39,7 +42,6 @@ export default function Payment() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Chave PIX oficial configurada
   const pixKey = "+55 41 99224-6602";
 
   const handleCopyPix = () => {
@@ -53,45 +55,47 @@ export default function Payment() {
     setErrorMsg(null);
 
     try {
-      // 1. Envia requisição direta ao backend via fetch nativo
-      const response = await fetch("/api/members", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: String(name),
-          phone: String(phone),
-          tier: String(tierKey),
-          amount: Number(amount),
-          status: "pago",
-          paidAt: new Date().toISOString(),
-        }),
-      });
+      let memberId = params.id;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || `Erro HTTP ${response.status}`);
+      // 1. Se o ID ainda não veio da tela de cadastro, cria o membro na API
+      if (!memberId) {
+        const validLevel: Level = ["bronze", "prata", "ouro"].includes(tierKey)
+          ? (tierKey as Level)
+          : "outro";
+
+        const newMember = await api.createMember({
+          name,
+          whatsapp,
+          level: validLevel,
+          amount,
+        });
+        memberId = newMember.id;
       }
 
-      // 2. Sucesso: avança para o certificado
+      // 2. Notifica o backend que o membro pagou (vai para 'aguardando_confirmacao' no painel do pastor)
+      if (memberId) {
+        await api.markPaid(memberId);
+      }
+
+      // 3. Sucesso: avança para a tela de certificado
       router.push({
         pathname: "/certificate",
         params: {
           name,
           tier: tierKey,
+          id: memberId,
         },
       });
     } catch (error: any) {
       console.error("Erro ao registrar pagamento:", error);
       
-      const serverDetails = error.message || "Erro de conexão com o servidor.";
+      const serverDetails = error.message || "Falha na comunicação com o servidor.";
       setErrorMsg(serverDetails);
 
       if (Platform.OS === "web" && typeof window !== "undefined") {
-        window.alert(`Erro ao confirmar: ${serverDetails}`);
+        window.alert(`Atenção: ${serverDetails}`);
       } else {
-        Alert.alert("Erro ao confirmar", serverDetails);
+        Alert.alert("Atenção", serverDetails);
       }
     } finally {
       setLoading(false);
