@@ -1,7 +1,6 @@
 const BASE = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 if (!BASE) {
-  // Fail fast in dev if backend URL is missing.
   console.warn("EXPO_PUBLIC_BACKEND_URL not set");
 }
 
@@ -73,6 +72,10 @@ export const api = {
     req<Member>(`/admin/members/${id}/confirm`, { method: "PATCH" }, token),
   resetMember: (token: string, id: string) =>
     req<Member>(`/admin/members/${id}/reset`, { method: "PATCH" }, token),
+  clearAllMembers: (token: string) =>
+    req<{ ok: boolean; deleted_count: number }>("/admin/members/clear-all", { method: "DELETE" }, token),
+  deleteMember: (token: string, id: string) =>
+    req<{ ok: boolean }>(`/admin/members/${id}`, { method: "DELETE" }, token),
   stats: (token: string) =>
     req<{ total: number; pendente: number; aguardando_confirmacao: number; confirmado: number }>(
       "/admin/stats",
