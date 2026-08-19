@@ -12,31 +12,34 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
-import { colors, spacing, radius, font, tierMeta, formatBRL } from "@/src/lib/theme";
+import { colors, spacing, radius, font, tierMeta, formatBRL, TierKey } from "@/src/lib/theme";
 
-type TierKey = "bronze" | "prata" | "ouro";
-
-const TIERS: TierKey[] = ["bronze", "prata", "ouro"];
+const NÍVEIS: TierKey[] = ["bronze", "prata", "ouro"];
 
 export default function Levels() {
   const router = useRouter();
   const [customValue, setCustomValue] = useState("");
   const [customError, setCustomError] = useState<string | null>(null);
 
-  const goTo = (level: string, amount: number) =>
-    router.push({ pathname: "/register", params: { level, amount: String(amount) } });
+  const goTo = (tier: string, amount: number) => {
+    router.push({
+      pathname: "/register",
+      params: { tier, amount: String(amount) },
+    });
+  };
 
-  const submitCustom = () => {
+  const handleCustomSubmit = () => {
     const n = Number(customValue.replace(",", "."));
     if (!n || n < 10) {
-      setCustomError("Valor mínimo: R$ 10,00");
+      setCustomError("O valor mínimo para contribuição é de R$ 10,00");
       return;
     }
     setCustomError(null);
-    goTo("outro", n);
+    goTo("custom", n);
   };
 
   return (
@@ -48,77 +51,98 @@ export default function Levels() {
         >
           <ScrollView
             contentContainerStyle={styles.scroll}
-            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
+            {/* Cabeçalho */}
             <View style={styles.header}>
-              <Pressable onPress={() => router.back()} style={styles.back} testID="back-button">
+              <Pressable
+                onPress={() => router.back()}
+                style={styles.backButton}
+                testID="levels-back-btn"
+              >
                 <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
               </Pressable>
-              <Text style={styles.eyebrow}>ESCOLHA SEU NÍVEL</Text>
-              <Text style={styles.title}>Qual coluna você{"\n"}quer ser?</Text>
-              <Text style={styles.sub}>
-                Cada coluna sustenta uma parte da obra. Escolha com o coração.
+              <Text style={styles.headerTitle}>Escolha sua Coluna</Text>
+              <View style={{ width: 40 }} />
+            </View>
+
+            <View style={styles.leadContainer}>
+              <Text style={styles.eyebrow}>PROJETO DE EDIFICAÇÃO</Text>
+              <Text style={styles.title}>Qual pilar você deseja levantar?</Text>
+              <Text style={styles.subtitle}>
+                Escolha o valor mensal que tocar no seu coração para apoiar a Casa de Deus.
               </Text>
             </View>
 
-            <View style={styles.list}>
-              {TIERS.map((key) => {
-                const t = tierMeta[key];
+            {/* Cards dos Níveis Soft Light */}
+            <View style={styles.tilesContainer}>
+              {NÍVEIS.map((key) => {
+                const item = tierMeta[key];
                 return (
-                  <View key={key} style={[styles.card, { borderColor: t.color }]} testID={`tier-card-${key}`}>
-                    <View style={styles.cardTopRow}>
-                      <View style={[styles.tierIcon, { backgroundColor: t.color + "22", borderColor: t.color }]}>
-                        <Text style={{ fontSize: 26 }}>{t.emoji}</Text>
+                  <Pressable
+                    key={key}
+                    onPress={() => goTo(key, item.amount)}
+                    style={styles.tileCard}
+                    testID={`tier-card-${key}`}
+                  >
+                    <LinearGradient
+                      colors={[item.lightColor, item.color]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.tileGlowIcon}
+                    >
+                      <Text style={styles.tileGlowLetter}>{key.charAt(0).toUpperCase()}</Text>
+                    </LinearGradient>
+
+                    <View style={styles.tileContent}>
+                      <View style={styles.tileHeaderRow}>
+                        <Text style={styles.tileLabel}>{item.label}</Text>
+                        <Text style={[styles.tilePrice, { color: item.color }]}>
+                          {formatBRL(item.amount)}
+                          <Text style={styles.tilePricePeriod}>/mês</Text>
+                        </Text>
                       </View>
-                      <View style={styles.priceBlock}>
-                        <Text style={styles.price}>{formatBRL(t.amount)}</Text>
-                        <Text style={styles.perMonth}>por mês</Text>
-                      </View>
+                      <Text style={styles.tileDescription}>{item.description}</Text>
                     </View>
 
-                    <Text style={styles.tierName}>{t.label}</Text>
-                    <Text style={[styles.tierSubtitle, { color: t.color }]}>{t.subtitle}</Text>
-                    <Text style={styles.tierDesc}>{t.description}</Text>
-
-                    <PrimaryButton
-                      title="Ser Esta Coluna"
-                      color={t.color}
-                      textColor="#0B1120"
-                      onPress={() => goTo(key, t.amount)}
-                      testID={`tier-cta-${key}`}
-                      style={{ marginTop: spacing.lg }}
-                    />
-                  </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
+                  </Pressable>
                 );
               })}
+            </View>
 
-              <View style={styles.customCard} testID="custom-value-card">
-                <Text style={styles.customTitle}>Semear Outro Valor</Text>
-                <Text style={styles.customSub}>
-                  Contribua com um valor livre, no que Deus colocar em seu coração.
-                </Text>
-                <View style={styles.inputRow}>
-                  <Text style={styles.currencyLabel}>R$</Text>
-                  <TextInput
-                    value={customValue}
-                    onChangeText={(v) => setCustomValue(v.replace(/[^0-9.,]/g, ""))}
-                    placeholder="0,00"
-                    placeholderTextColor={colors.cardTextMuted}
-                    keyboardType="decimal-pad"
-                    style={styles.input}
-                    testID="custom-value-input"
-                  />
-                </View>
-                {customError && <Text style={styles.err}>{customError}</Text>}
-                <PrimaryButton
-                  title="Continuar com este valor"
-                  onPress={submitCustom}
-                  testID="custom-value-cta"
-                  style={{ marginTop: spacing.md }}
+            {/* Card de Valor Personalizado */}
+            <View style={styles.customCard}>
+              <Text style={styles.customTitle}>Outro Valor no Coração</Text>
+              <Text style={styles.customSubtitle}>
+                Digite um valor personalizado caso queira contribuir com outra quantia.
+              </Text>
+
+              <View style={styles.inputRow}>
+                <Text style={styles.currencyPrefix}>R$</Text>
+                <TextInput
+                  placeholder="0,00"
+                  placeholderTextColor={colors.onSurfaceLo}
+                  keyboardType="numeric"
+                  value={customValue}
+                  onChangeText={(val) => {
+                    setCustomValue(val);
+                    if (customError) setCustomError(null);
+                  }}
+                  style={styles.inputField}
+                  testID="custom-amount-input"
                 />
-                <Text style={styles.customHint}>Valor mínimo: R$ 10,00</Text>
               </View>
+
+              {customError && <Text style={styles.errorText}>{customError}</Text>}
+
+              <PrimaryButton
+                title="Avançar com este Valor"
+                onPress={handleCustomSubmit}
+                testID="custom-amount-btn"
+                style={{ marginTop: spacing.md }}
+              />
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -128,125 +152,162 @@ export default function Levels() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingBottom: spacing.xxxl, paddingHorizontal: spacing.lg },
-  header: { paddingTop: spacing.md, paddingHorizontal: spacing.sm, marginBottom: spacing.xl },
-  back: {
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxxl,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: spacing.md,
+  },
+  backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.06)",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  headerTitle: {
+    fontSize: font.size.base,
+    fontWeight: font.weight.bold,
+    color: colors.onSurface,
+  },
+  leadContainer: {
+    marginTop: spacing.md,
     marginBottom: spacing.lg,
   },
   eyebrow: {
-    color: colors.brand,
-    fontSize: 12,
+    fontSize: font.size.xs,
     fontWeight: font.weight.bold,
-    letterSpacing: 1.4,
-    marginBottom: spacing.sm,
+    color: colors.brand,
+    letterSpacing: 1.1,
+    marginBottom: 4,
   },
   title: {
-    color: colors.onSurface,
-    fontSize: font.size.display,
-    fontWeight: font.weight.black,
-    lineHeight: 38,
-    letterSpacing: -0.5,
-  },
-  sub: {
-    color: colors.onSurfaceMuted,
-    fontSize: font.size.base,
-    marginTop: spacing.md,
-    lineHeight: 22,
-  },
-  list: { gap: spacing.lg },
-  card: {
-    backgroundColor: colors.cardTint,
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    borderWidth: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
-  },
-  cardTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  tierIcon: {
-    width: 56, height: 56, borderRadius: 16,
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 1.5,
-  },
-  priceBlock: { alignItems: "flex-end" },
-  price: {
-    color: colors.cardText,
-    fontSize: font.size.xxl,
-    fontWeight: font.weight.black,
-    letterSpacing: -0.5,
-  },
-  perMonth: { color: colors.cardTextMuted, fontSize: font.size.sm },
-  tierName: {
-    marginTop: spacing.lg,
-    color: colors.cardText,
     fontSize: font.size.xl,
+    fontWeight: font.weight.black,
+    color: colors.onSurface,
+    lineHeight: 28,
+  },
+  subtitle: {
+    fontSize: font.size.sm,
+    color: colors.onSurfaceMuted,
+    marginTop: 6,
+    lineHeight: 20,
+  },
+  tilesContainer: {
+    gap: spacing.md,
+  },
+  tileCard: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  tileGlowIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tileGlowLetter: {
+    color: "#FFFFFF",
+    fontSize: font.size.lg,
+    fontWeight: font.weight.black,
+  },
+  tileContent: {
+    flex: 1,
+  },
+  tileHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  tileLabel: {
+    fontSize: font.size.base,
     fontWeight: font.weight.bold,
+    color: colors.onSurface,
   },
-  tierSubtitle: {
-    marginTop: 2,
+  tilePrice: {
     fontSize: font.size.base,
-    fontWeight: font.weight.semibold,
+    fontWeight: font.weight.black,
   },
-  tierDesc: {
-    color: colors.cardTextMuted,
-    fontSize: font.size.base,
-    lineHeight: 22,
-    marginTop: spacing.md,
+  tilePricePeriod: {
+    fontSize: font.size.xs,
+    fontWeight: font.weight.regular,
+    color: colors.onSurfaceMuted,
+  },
+  tileDescription: {
+    fontSize: font.size.xs,
+    color: colors.onSurfaceMuted,
+    lineHeight: 16,
   },
   customCard: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderColor: "rgba(255,255,255,0.12)",
-    borderWidth: 1,
+    marginTop: spacing.xl,
+    backgroundColor: colors.card,
     borderRadius: radius.xl,
-    padding: spacing.xl,
-    marginTop: spacing.md,
+    padding: spacing.lg,
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 3,
   },
   customTitle: {
-    color: colors.onSurface,
-    fontSize: font.size.xl,
-    fontWeight: font.weight.bold,
-  },
-  customSub: {
-    color: colors.onSurfaceMuted,
     fontSize: font.size.base,
-    marginTop: spacing.sm,
-    lineHeight: 22,
+    fontWeight: font.weight.bold,
+    color: colors.onSurface,
+  },
+  customSubtitle: {
+    fontSize: font.size.xs,
+    color: colors.onSurfaceMuted,
+    marginTop: 4,
+    marginBottom: spacing.md,
   },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.cardTint,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.lg,
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    height: 52,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  currencyLabel: {
-    color: colors.cardText,
-    fontSize: font.size.lg,
+  currencyPrefix: {
+    fontSize: font.size.base,
     fontWeight: font.weight.bold,
-    marginRight: spacing.sm,
-  },
-  input: {
-    flex: 1,
-    color: colors.cardText,
-    fontSize: font.size.xl,
-    fontWeight: font.weight.bold,
-    paddingVertical: 14,
-  },
-  err: { color: colors.danger, fontSize: font.size.sm, marginTop: spacing.sm },
-  customHint: {
     color: colors.onSurfaceMuted,
-    fontSize: font.size.sm,
-    marginTop: spacing.sm,
-    textAlign: "center",
+    marginRight: spacing.xs,
+  },
+  inputField: {
+    flex: 1,
+    fontSize: font.size.base,
+    fontWeight: font.weight.bold,
+    color: colors.onSurface,
+  },
+  errorText: {
+    color: colors.error,
+    fontSize: font.size.xs,
+    marginTop: 6,
+    fontWeight: font.weight.medium,
   },
 });
