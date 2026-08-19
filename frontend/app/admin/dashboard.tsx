@@ -20,49 +20,85 @@ import { api, Member } from "@/src/lib/api";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { token } = useAuth();
-  const [filter, setFilter] = useState<"all" | "paid" | "pending">("all");
+  const auth = useAuth() as any;
+  const token = auth?.token;
+
+  const [filtro, setFiltro] = useState<"todos" | "pago" | "pendente">("todos");
   const [search, setSearch] = useState("");
 
-  const [members, setMembers] = useState<Member[]>([]);
-  const [stats, setStats] = useState({ total: 0, pendente: 0, aguardando_confirmacao: 0, confirmado: 0 });
-  const [loading, setLoading] = useState(true);
+  const [membros, setMembros] = useState<Member[]>([]);
+  const [estatisticas, setStats] = useState({
+    total: 0,
+    pendente: 0,
+    aguardando_confirmacao: 0,
+    confirmado: 0,
+  });
+  const [carregando, setCarregando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!token) return;
-    setLoading(true);
+  const carregar = useCallback(async () => {
+    if (!token) {
+      setCarregando(false);
+      return;
+    }
+    setCarregando(true);
     setError(null);
     try {
-      const [membersData, statsData] = await Promise.all([
+      const [lista, stats] = await Promise.all([
         api.listMembers(token),
         api.stats(token),
       ]);
-      setMembers(membersData);
-      setStats(statsData);
-    } catch (e: any) {
-      setError(e.message || "Erro ao carregar dados");
+      setMembros(lista || []);
+      setStats(stats || { total: 0, pendente: 0, aguardando_confirmacao: 0, confirmado: 0 });
+    } catch (err: any) {
+      setError(err?.message || "Credenciais inválidas ou token expirado");
     } finally {
-      setLoading(false);
+      setCarregando(false);
     }
   }, [token]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    carregar();
+  }, [carregar]);
 
-  const isPaidStatus = (status: Member["status"]) => status === "confirmado";
+  const handleLogout = async () => {
+    try {
+      if (auth?.logout) await auth.logout();
+      if (auth?.signOut) await auth.signOut();
+    } catch {}
 
-  const filteredMembers = members.filter((m) => {
-    const paid = isPaidStatus(m.status);
-    const matchesFilter = filter === "all" ? true : filter === "paid" ? paid : !paid;
-    const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());
-    return matchesFilter && matchesSearch;
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+      sessionStorage.clear();
+    }
+
+    router.replace("/admin/login");
+  };
+
+  const handleConfirmarMembro = async (id: string) => {
+    if (!token) return;
+    try {
+      await api.confirmMember(token, id);
+      carregar();
+    } catch (err: any) {
+      alert(err?.message || "Erro ao confirmar membro");
+    }
+  };
+
+  const membrosFiltrados = membros.filter((m) => {
+    const atendeFiltro =
+      filtro === "todos"
+        ? true
+        : filtro === "pago"
+        ? m.status === "confirmado" || m.status === "aguardando_confirmacao"
+        : m.status === "pendente";
+
+    const atendeBusca =
+      m.name.toLowerCase().includes(search.toLowerCase()) ||
+      (m.whatsapp && m.whatsapp.includes(search));
+
+    return atendeFiltro && atendeBusca;
   });
-
-  const totalCols = stats.total;
-  const totalPaid = stats.confirmado;
-  const totalPending = stats.pendente + stats.aguardando_confirmacao;
 
   return (
     <ScreenBackground>
@@ -71,155 +107,159 @@ export default function AdminDashboard() {
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
+          {/* Topo / Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <LinearGradient
-                colors={[colors.brandLight, colors.brand]}
-                style={styles.avatar}
-              >
+              <View style={styles.avatar}>
                 <Text style={styles.avatarText}>PR</Text>
-              </LinearGradient>
+              </View>
               <View>
-                <Text style={styles.headerTitle}>Painel do Pastor</Text>
-                <Text style={styles.headerSub}>Igreja Visão Missionária</Text>
+                <Text style={styles.title}>Painel do Pastor</Text>
+                <Text style={styles.subtitle}>Igreja Visão Missionária</Text>
               </View>
             </View>
-
-            <Pressable
-              onPress={() => router.push("/")}
-              style={styles.logoutBtn}
-              testID="admin-logout-btn"
-            >
-              <Ionicons name="log-out-outline" size={18} color={colors.onSurfaceMuted} />
+            <Pressable onPress={handleLogout} style={styles.logoutBtn}>
+              <Ionicons name="log-out-outline" size={24} color={colors.onSurfaceMuted} />
             </Pressable>
           </View>
 
-          {/* Linha de KPIs / Métricas */}
-          <View style={styles.kpiRow}>
-            <View style={styles.kpiCard}>
-              <Text style={styles.kpiLabel}>COLUNAS</Text>
-              <Text style={styles.kpiValue}>{totalCols}</Text>
+          {/* Cards de Métricas */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>COLUNAS</Text>
+              <Text style={styles.statVal}>{estatisticas.total}</Text>
             </View>
-            <View style={styles.kpiCard}>
-              <Text style={styles.kpiLabel}>EM DIA</Text>
-              <Text style={[styles.kpiValue, { color: colors.success }]}>{totalPaid}</Text>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>EM DIA</Text>
+              <Text style={[styles.statVal, { color: colors.success }]}>
+                {estatisticas.confirmado}
+              </Text>
             </View>
-            <View style={styles.kpiCard}>
-              <Text style={styles.kpiLabel}>PENDENTES</Text>
-              <Text style={[styles.kpiValue, { color: colors.error }]}>{totalPending}</Text>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>PENDENTES</Text>
+              <Text style={[styles.statVal, { color: colors.brand }]}>
+                {estatisticas.pendente + estatisticas.aguardando_confirmacao}
+              </Text>
             </View>
           </View>
 
-          {/* Campo de Busca */}
-          <View style={styles.searchRow}>
-            <Ionicons name="search-outline" size={16} color={colors.onSurfaceLo} />
+          {/* Barra de Pesquisa */}
+          <View style={styles.searchBox}>
+            <Ionicons name="search" size={18} color={colors.onSurfaceMuted} />
             <TextInput
               placeholder="Buscar coluna..."
-              placeholderTextColor={colors.onSurfaceLo}
+              placeholderTextColor={colors.onSurfaceMuted}
               value={search}
               onChangeText={setSearch}
               style={styles.searchInput}
             />
           </View>
 
-          {/* Filtros em Chips */}
-          <View style={styles.filtersRow}>
-            <Pressable
-              onPress={() => setFilter("all")}
-              style={[styles.filterChip, filter === "all" && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterChipText, filter === "all" && styles.filterChipTextActive]}>
-                Todos
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setFilter("paid")}
-              style={[styles.filterChip, filter === "paid" && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterChipText, filter === "paid" && styles.filterChipTextActive]}>
-                Em dia
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setFilter("pending")}
-              style={[styles.filterChip, filter === "pending" && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterChipText, filter === "pending" && styles.filterChipTextActive]}>
-                Pendentes
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Rótulo da Lista */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Colunas cadastradas</Text>
-            <Text style={styles.sectionCount}>{filteredMembers.length} no total</Text>
-          </View>
-
-          {/* Estado de carregamento / erro */}
-          {loading && (
-            <View style={{ paddingVertical: spacing.xl, alignItems: "center" }}>
-              <ActivityIndicator color={colors.brand} />
-            </View>
-          )}
-
-          {!loading && error && (
-            <View style={{ paddingVertical: spacing.lg, alignItems: "center", gap: 8 }}>
-              <Text style={{ color: colors.error, fontSize: font.size.xs, textAlign: "center" }}>
-                {error}
-              </Text>
-              <Pressable onPress={load}>
-                <Text style={{ color: colors.brand, fontWeight: font.weight.bold, fontSize: font.size.xs }}>
-                  Tentar novamente
+          {/* Abas de Filtro */}
+          <View style={styles.filterRow}>
+            {(["todos", "pago", "pendente"] as const).map((f) => (
+              <Pressable
+                key={f}
+                onPress={() => setFiltro(f)}
+                style={[
+                  styles.filterBtn,
+                  filtro === f && styles.filterBtnActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.filterBtnText,
+                    filtro === f && styles.filterBtnTextActive,
+                  ]}
+                >
+                  {f === "todos" ? "Todos" : f === "pago" ? "Em dia" : "Pendentes"}
                 </Text>
               </Pressable>
-            </View>
-          )}
+            ))}
+          </View>
 
           {/* Lista de Membros */}
-          {!loading && !error && (
-            <View style={styles.membersList}>
-              {filteredMembers.map((m) => {
-                const tierKey = (m.level === "outro" ? "prata" : m.level) as TierKey;
-                const meta = tierMeta[tierKey] || tierMeta.prata;
-                const isPaid = isPaidStatus(m.status);
+          <View style={styles.listHeader}>
+            <Text style={styles.listTitle}>Colunas cadastradas</Text>
+            <Text style={styles.listCount}>{membrosFiltrados.length} no total</Text>
+          </View>
 
-                return (
-                  <View key={m.id} style={styles.memberCard}>
-                    <LinearGradient
-                      colors={[meta.lightColor, meta.color]}
-                      style={styles.memberIcon}
-                    >
-                      <Text style={styles.memberIconText}>{m.level.charAt(0).toUpperCase()}</Text>
-                    </LinearGradient>
+          {carregando ? (
+            <ActivityIndicator size="large" color={colors.brand} style={{ marginTop: 40 }} />
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorMsg}>{error}</Text>
+              <Pressable onPress={carregar} style={styles.retryBtn}>
+                <Text style={styles.retryBtnText}>Tentar novamente</Text>
+              </Pressable>
+              <Pressable onPress={handleLogout} style={[styles.retryBtn, { marginTop: 10, backgroundColor: "#E2E8F0" }]}>
+                <Text style={[styles.retryBtnText, { color: "#334155" }]}>Ir para Login</Text>
+              </Pressable>
+            </View>
+          ) : membrosFiltrados.length === 0 ? (
+            <Text style={styles.emptyText}>Nenhuma coluna encontrada.</Text>
+          ) : (
+            membrosFiltrados.map((m) => {
+              const meta = tierMeta[(m.level as TierKey) || "prata"] || tierMeta.prata;
+              const isAguardando = m.status === "aguardando_confirmacao";
+              const isConfirmado = m.status === "confirmado";
 
-                    <View style={styles.memberBody}>
-                      <Text style={styles.memberName}>{m.name}</Text>
-                      <Text style={styles.memberSub}>
-                        {meta.label} · R$ {m.amount}
-                      </Text>
-                    </View>
-
+              return (
+                <View key={m.id} style={styles.memberCard}>
+                  <LinearGradient
+                    colors={[meta.lightColor, meta.color]}
+                    style={styles.memberIcon}
+                  >
+                    <Text style={styles.memberIconText}>
+                      {(m.level || "P").charAt(0).toUpperCase()}
+                    </Text>
+                  </LinearGradient>
+                  <View style={styles.memberInfo}>
+                    <Text style={styles.memberName}>{m.name}</Text>
+                    <Text style={styles.memberMeta}>
+                      Coluna {meta.label} · {m.whatsapp || "Sem whats"}
+                    </Text>
+                  </View>
+                  <View style={styles.memberAction}>
                     <View
                       style={[
                         styles.statusBadge,
-                        { backgroundColor: isPaid ? "rgba(34, 181, 115, 0.12)" : "rgba(232, 84, 62, 0.12)" },
+                        isConfirmado
+                          ? styles.statusPago
+                          : isAguardando
+                          ? styles.statusAguardando
+                          : styles.statusPendente,
                       ]}
                     >
                       <Text
                         style={[
                           styles.statusBadgeText,
-                          { color: isPaid ? colors.success : colors.error },
+                          isConfirmado
+                            ? styles.statusPagoText
+                            : isAguardando
+                            ? styles.statusAguardandoText
+                            : styles.statusPendenteText,
                         ]}
                       >
-                        {isPaid ? "Em dia" : "Pendente"}
+                        {isConfirmado
+                          ? "Pago"
+                          : isAguardando
+                          ? "Aguardando"
+                          : "Pendente"}
                       </Text>
                     </View>
+                    {isAguardando && (
+                      <Pressable
+                        onPress={() => handleConfirmarMembro(m.id)}
+                        style={styles.btnConfirmar}
+                      >
+                        <Text style={styles.btnConfirmarText}>Confirmar</Text>
+                      </Pressable>
+                    )}
                   </View>
-                );
-              })}
-            </View>
+                </View>
+              );
+            })
           )}
         </ScrollView>
       </SafeAreaView>
@@ -229,203 +269,225 @@ export default function AdminDashboard() {
 
 const styles = StyleSheet.create({
   scroll: {
-    flexGrow: 1,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl,
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: spacing.md,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: colors.brand,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 3,
   },
   avatarText: {
-    fontSize: 12,
-    fontWeight: font.weight.black,
-    color: "#FFFFFF",
-  },
-  headerTitle: {
+    color: "#fff",
+    fontWeight: font.weight.bold,
     fontSize: font.size.base,
+  },
+  title: {
+    fontSize: font.size.lg,
     fontWeight: font.weight.bold,
     color: colors.onSurface,
   },
-  headerSub: {
+  subtitle: {
     fontSize: font.size.xs,
     color: colors.onSurfaceMuted,
-    marginTop: 1,
   },
   logoutBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
+    padding: 8,
     backgroundColor: colors.card,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: radius.md,
   },
-  kpiRow: {
+  statsRow: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: spacing.xs,
+    gap: spacing.md,
   },
-  kpiCard: {
+  statCard: {
     flex: 1,
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     padding: spacing.md,
     shadowColor: "#A3B1C6",
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  kpiLabel: {
-    fontSize: 9.5,
+  statLabel: {
+    fontSize: 10,
     fontWeight: font.weight.bold,
     color: colors.onSurfaceMuted,
-    letterSpacing: 0.6,
   },
-  kpiValue: {
-    fontSize: font.size.lg,
+  statVal: {
+    fontSize: font.size.xl,
     fontWeight: font.weight.black,
     color: colors.onSurface,
     marginTop: 4,
   },
-  searchRow: {
+  searchBox: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    height: 46,
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 2,
+    height: 48,
+    gap: spacing.sm,
   },
   searchInput: {
     flex: 1,
-    fontSize: font.size.xs,
+    fontSize: font.size.sm,
     color: colors.onSurface,
-    fontWeight: font.weight.medium,
   },
-  filtersRow: {
+  filterRow: {
     flexDirection: "row",
+    gap: spacing.sm,
+  },
+  filterBtn: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 8,
+    borderRadius: radius.full,
+    backgroundColor: colors.card,
+  },
+  filterBtnActive: {
+    backgroundColor: colors.brand,
+  },
+  filterBtnText: {
+    fontSize: font.size.xs,
+    fontWeight: font.weight.bold,
+    color: colors.onSurfaceMuted,
+  },
+  filterBtnTextActive: {
+    color: "#fff",
+  },
+  listHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: spacing.sm,
+  },
+  listTitle: {
+    fontSize: font.size.base,
+    fontWeight: font.weight.bold,
+    color: colors.onSurface,
+  },
+  listCount: {
+    fontSize: font.size.xs,
+    color: colors.onSurfaceMuted,
+  },
+  errorContainer: {
+    alignItems: "center",
+    marginTop: 30,
     gap: 8,
   },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: radius.sm,
-    backgroundColor: colors.card,
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  filterChipActive: {
-    backgroundColor: colors.brand,
-    shadowColor: colors.brand,
-    shadowOpacity: 0.4,
-  },
-  filterChipText: {
-    fontSize: 11,
-    fontWeight: font.weight.bold,
-    color: colors.onSurfaceMuted,
-  },
-  filterChipTextActive: {
-    color: "#FFFFFF",
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: spacing.xs,
-  },
-  sectionTitle: {
+  errorMsg: {
+    color: "#EF4444",
     fontSize: font.size.sm,
+    textAlign: "center",
+  },
+  retryBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+  },
+  retryBtnText: {
+    color: colors.brand,
     fontWeight: font.weight.bold,
-    color: colors.onSurface,
-  },
-  sectionCount: {
     fontSize: font.size.xs,
-    color: colors.onSurfaceMuted,
-    fontWeight: font.weight.medium,
   },
-  membersList: {
-    gap: 10,
+  emptyText: {
+    textAlign: "center",
+    color: colors.onSurfaceMuted,
+    marginTop: 30,
+    fontSize: font.size.sm,
   },
   memberCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     padding: spacing.md,
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 5, height: 5 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 3,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginBottom: spacing.sm,
   },
   memberIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.sm,
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
   memberIconText: {
-    color: "#FFFFFF",
-    fontSize: font.size.xs,
+    color: "#fff",
     fontWeight: font.weight.black,
+    fontSize: font.size.base,
   },
-  memberBody: {
+  memberInfo: {
     flex: 1,
   },
   memberName: {
-    fontSize: font.size.xs,
+    fontSize: font.size.sm,
     fontWeight: font.weight.bold,
     color: colors.onSurface,
   },
-  memberSub: {
-    fontSize: 10.5,
+  memberMeta: {
+    fontSize: font.size.xs,
     color: colors.onSurfaceMuted,
     marginTop: 2,
-    fontWeight: font.weight.medium,
+  },
+  memberAction: {
+    alignItems: "flex-end",
+    gap: 6,
   },
   statusBadge: {
-    paddingHorizontal: 9,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
+  },
+  statusPago: {
+    backgroundColor: "#DCFCE7",
+  },
+  statusAguardando: {
+    backgroundColor: "#FEF3C7",
+  },
+  statusPendente: {
+    backgroundColor: "#FEE2E2",
   },
   statusBadgeText: {
-    fontSize: 9.5,
-    fontWeight: font.weight.black,
+    fontSize: 10,
+    fontWeight: font.weight.bold,
+  },
+  statusPagoText: {
+    color: "#15803D",
+  },
+  statusAguardandoText: {
+    color: "#B45309",
+  },
+  statusPendenteText: {
+    color: "#B91C1C",
+  },
+  btnConfirmar: {
+    backgroundColor: colors.brand,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+  },
+  btnConfirmarText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: font.weight.bold,
   },
 });
