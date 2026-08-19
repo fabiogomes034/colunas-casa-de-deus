@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import QRCode from "react-native-qrcode-svg";
 
+import { api } from "@/src/lib/api";
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
 import { colors, spacing, radius, font, tierMeta, formatBRL, TierKey } from "@/src/lib/theme";
@@ -21,6 +22,7 @@ import { colors, spacing, radius, font, tierMeta, formatBRL, TierKey } from "@/s
 export default function Payment() {
   const router = useRouter();
   const params = useLocalSearchParams<{
+    id?: string;
     name?: string;
     phone?: string;
     tier?: string;
@@ -28,6 +30,7 @@ export default function Payment() {
   }>();
 
   const name = params.name || "Contribuinte";
+  const phone = params.phone || "";
   const tierKey = (params.tier as TierKey) || "prata";
   const meta = tierMeta[tierKey] || tierMeta.prata;
   const amount = Number(params.amount) || meta.amount;
@@ -46,9 +49,17 @@ export default function Payment() {
 
   const handleConfirmPayment = async () => {
     setLoading(true);
-    // Simulação de confirmação ou envio da notificação
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Grava o pagamento/membro no backend real
+      await api.post("/members", {
+        name,
+        phone,
+        tier: tierKey,
+        amount,
+        status: "pago",
+        paidAt: new Date().toISOString(),
+      });
+
       router.push({
         pathname: "/certificate",
         params: {
@@ -56,7 +67,15 @@ export default function Payment() {
           tier: tierKey,
         },
       });
-    }, 800);
+    } catch (error: any) {
+      console.error("Erro ao registrar pagamento:", error);
+      Alert.alert(
+        "Atenção",
+        "Não foi possível registrar o pagamento no servidor. Tente novamente."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
