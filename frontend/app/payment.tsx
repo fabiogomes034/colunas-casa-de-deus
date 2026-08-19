@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   Alert,
   Clipboard,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -37,8 +38,8 @@ export default function Payment() {
 
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Chave PIX oficial configurada
   const pixKey = "+55 41 99224-6602";
 
   const handleCopyPix = () => {
@@ -49,16 +50,20 @@ export default function Payment() {
 
   const handleConfirmPayment = async () => {
     setLoading(true);
+    setErrorMessage(null);
+
     try {
-      // Grava o pagamento/membro no backend real
-      await api.post("/members", {
-        name,
-        phone,
-        tier: tierKey,
-        amount,
+      // Monta o payload garantindo tipos primitivos limpos
+      const payload = {
+        name: String(name),
+        phone: String(phone),
+        tier: String(tierKey),
+        amount: Number(amount),
         status: "pago",
         paidAt: new Date().toISOString(),
-      });
+      };
+
+      await api.post("/members", payload);
 
       router.push({
         pathname: "/certificate",
@@ -69,10 +74,20 @@ export default function Payment() {
       });
     } catch (error: any) {
       console.error("Erro ao registrar pagamento:", error);
-      Alert.alert(
-        "Atenção",
-        "Não foi possível registrar o pagamento no servidor. Tente novamente."
-      );
+      
+      const serverMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Falha na comunicação com o servidor.";
+
+      setErrorMessage(`Erro (${error.response?.status || 'conexão'}): ${serverMsg}`);
+
+      if (Platform.OS === "web") {
+        window.alert(`Erro ao confirmar: ${serverMsg}`);
+      } else {
+        Alert.alert("Atenção", `Erro ao confirmar: ${serverMsg}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -143,6 +158,14 @@ export default function Payment() {
               </Pressable>
             </View>
           </View>
+
+          {/* Mensagem de Erro Visível caso o backend recuse */}
+          {errorMessage && (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle" size={20} color="#FF3B30" />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          )}
 
           {/* Botão de Confirmação */}
           <PrimaryButton
@@ -323,6 +346,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: font.weight.bold,
     color: colors.brand,
+  },
+  errorBox: {
+    backgroundColor: "#FFE5E5",
+    borderRadius: radius.md,
+    padding: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: "#FF3B30",
+  },
+  errorText: {
+    color: "#D32F2F",
+    fontSize: font.size.xs,
+    fontWeight: font.weight.medium,
+    flex: 1,
   },
   stepsRow: {
     flexDirection: "row",
