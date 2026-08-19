@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -85,6 +86,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleLimparTudo = async () => {
+    const confirmar = Platform.OS === "web"
+      ? window.confirm("Tem certeza que deseja apagar TODOS os registros de teste da base de dados?")
+      : true;
+
+    if (confirmar && token) {
+      try {
+        setCarregando(true);
+        await api.clearAllMembers(token);
+        await carregar();
+      } catch (err: any) {
+        alert(err?.message || "Erro ao limpar base de dados");
+        setCarregando(false);
+      }
+    }
+  };
+
   const membrosFiltrados = membros.filter((m) => {
     const atendeFiltro =
       filtro === "todos"
@@ -118,9 +136,14 @@ export default function AdminDashboard() {
                 <Text style={styles.subtitle}>Igreja Visão Missionária</Text>
               </View>
             </View>
-            <Pressable onPress={handleLogout} style={styles.logoutBtn}>
-              <Ionicons name="log-out-outline" size={24} color={colors.onSurfaceMuted} />
-            </Pressable>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable onPress={handleLimparTudo} style={styles.clearBtn} testID="btn-limpar-tudo">
+                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+              </Pressable>
+              <Pressable onPress={handleLogout} style={styles.logoutBtn} testID="btn-logout">
+                <Ionicons name="log-out-outline" size={24} color={colors.onSurfaceMuted} />
+              </Pressable>
+            </View>
           </View>
 
           {/* Cards de Métricas */}
@@ -306,10 +329,19 @@ const styles = StyleSheet.create({
     fontSize: font.size.xs,
     color: colors.onSurfaceMuted,
   },
+  clearBtn: {
+    padding: 8,
+    backgroundColor: "#FEE2E2",
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   logoutBtn: {
     padding: 8,
     backgroundColor: colors.card,
     borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
   },
   statsRow: {
     flexDirection: "row",
