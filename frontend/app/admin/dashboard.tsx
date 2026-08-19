@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,37 +15,54 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { colors, spacing, radius, font, tierMeta, TierKey } from "@/src/lib/theme";
-
-interface Contributor {
-  id: string;
-  name: string;
-  tier: TierKey;
-  amount: number;
-  status: "paid" | "pending";
-}
-
-const DADOS_EXEMPLO: Contributor[] = [
-  { id: "1", name: "Maria Fernandes", tier: "ouro", amount: 100, status: "paid" },
-  { id: "2", name: "João Vitor", tier: "prata", amount: 70, status: "paid" },
-  { id: "3", name: "Ana Beatriz", tier: "bronze", amount: 50, status: "pending" },
-  { id: "4", name: "Carlos Eduardo", tier: "prata", amount: 70, status: "paid" },
-];
+import { useAuth } from "@/src/lib/auth";
+import { api, Member } from "@/src/lib/api";
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { token } = useAuth();
   const [filter, setFilter] = useState<"all" | "paid" | "pending">("all");
   const [search, setSearch] = useState("");
 
-  const filteredMembers = DADOS_EXEMPLO.filter((m) => {
-    const matchesFilter =
-      filter === "all" ? true : filter === "paid" ? m.status === "paid" : m.status === "pending";
+  const [members, setMembers] = useState<Member[]>([]);
+  const [stats, setStats] = useState({ total: 0, pendente: 0, aguardando_confirmacao: 0, confirmado: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const [membersData, statsData] = await Promise.all([
+        api.listMembers(token),
+        api.stats(token),
+      ]);
+      setMembers(membersData);
+      setStats(statsData);
+    } catch (e: any) {
+      setError(e.message || "Erro ao carregar dados");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const isPaidStatus = (status: Member["status"]) => status === "confirmado";
+
+  const filteredMembers = members.filter((m) => {
+    const paid = isPaidStatus(m.status);
+    const matchesFilter = filter === "all" ? true : filter === "paid" ? paid : !paid;
     const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
-  const totalCols = DADOS_EXEMPLO.length;
-  const totalPaid = DADOS_EXEMPLO.filter((m) => m.status === "paid").length;
-  const totalPending = DADOS_EXEMPLO.filter((m) => m.status === "pending").length;
+  const totalCols = stats.total;
+  const totalPaid = stats.confirmado;
+  const totalPending = stats.pendente + stats.aguardando_confirmacao;
 
   return (
     <ScreenBackground>
@@ -139,47 +157,70 @@ export default function AdminDashboard() {
             <Text style={styles.sectionCount}>{filteredMembers.length} no total</Text>
           </View>
 
+          {/* Estado de carregamento / erro */}
+          {loading && (
+            <View style={{ paddingVertical: spacing.xl, alignItems: "center" }}>
+              <ActivityIndicator color={colors.brand} />
+            </View>
+          )}
+
+          {!loading && error && (
+            <View style={{ paddingVertical: spacing.lg, alignItems: "center", gap: 8 }}>
+              <Text style={{ color: colors.error, fontSize: font.size.xs, textAlign: "center" }}>
+                {error}
+              </Text>
+              <Pressable onPress={load}>
+                <Text style={{ color: colors.brand, fontWeight: font.weight.bold, fontSize: font.size.xs }}>
+                  Tentar novamente
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
           {/* Lista de Membros */}
-          <View style={styles.membersList}>
-            {filteredMembers.map((m) => {
-              const meta = tierMeta[m.tier] || tierMeta.prata;
-              const isPaid = m.status === "paid";
+          {!loading && !error && (
+            <View style={styles.membersList}>
+              {filteredMembers.map((m) => {
+                const tierKey = (m.level === "outro" ? "prata" : m.level) as TierKey;
+                const meta = tierMeta[tierKey] || tierMeta.prata;
+                const isPaid = isPaidStatus(m.status);
 
-              return (
-                <View key={m.id} style={styles.memberCard}>
-                  <LinearGradient
-                    colors={[meta.lightColor, meta.color]}
-                    style={styles.memberIcon}
-                  >
-                    <Text style={styles.memberIconText}>{m.tier.charAt(0).toUpperCase()}</Text>
-                  </LinearGradient>
+                return (
+                  <View key={m.id} style={styles.memberCard}>
+                    <LinearGradient
+                      colors={[meta.lightColor, meta.color]}
+                      style={styles.memberIcon}
+                    >
+                      <Text style={styles.memberIconText}>{m.level.charAt(0).toUpperCase()}</Text>
+                    </LinearGradient>
 
-                  <View style={styles.memberBody}>
-                    <Text style={styles.memberName}>{m.name}</Text>
-                    <Text style={styles.memberSub}>
-                      {meta.label} · R$ {m.amount}
-                    </Text>
-                  </View>
+                    <View style={styles.memberBody}>
+                      <Text style={styles.memberName}>{m.name}</Text>
+                      <Text style={styles.memberSub}>
+                        {meta.label} · R$ {m.amount}
+                      </Text>
+                    </View>
 
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: isPaid ? "rgba(34, 181, 115, 0.12)" : "rgba(232, 84, 62, 0.12)" },
-                    ]}
-                  >
-                    <Text
+                    <View
                       style={[
-                        styles.statusBadgeText,
-                        { color: isPaid ? colors.success : colors.error },
+                        styles.statusBadge,
+                        { backgroundColor: isPaid ? "rgba(34, 181, 115, 0.12)" : "rgba(232, 84, 62, 0.12)" },
                       ]}
                     >
-                      {isPaid ? "Em dia" : "Pendente"}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.statusBadgeText,
+                          { color: isPaid ? colors.success : colors.error },
+                        ]}
+                      >
+                        {isPaid ? "Em dia" : "Pendente"}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              );
-            })}
-          </View>
+                );
+              })}
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </ScreenBackground>
