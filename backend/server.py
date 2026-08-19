@@ -172,7 +172,6 @@ async def get_config():
 
 @api_router.post("/members", response_model=Member)
 async def create_member(payload: MemberCreate):
-    # Enforce standard amount for named tiers
     if payload.level in LEVEL_AMOUNTS:
         payload.amount = float(LEVEL_AMOUNTS[payload.level])
 
@@ -222,7 +221,6 @@ async def get_member(member_id: str):
 @api_router.post("/auth/login", response_model=TokenResponse)
 async def login(data: LoginRequest):
     if data.username.strip() != ADMIN_USERNAME:
-        # equalize timing
         bcrypt.checkpw(b"dummy", ADMIN_PASSWORD_HASH)
         raise HTTPException(status_code=401, detail="Usuário ou senha inválidos")
     if not bcrypt.checkpw(data.password.encode("utf-8"), ADMIN_PASSWORD_HASH):
@@ -278,6 +276,20 @@ async def reset_status(member_id: str, _: str = Depends(require_admin)):
     if not doc:
         raise HTTPException(status_code=404, detail="Membro não encontrado")
     return serialize_member(doc)
+
+
+@api_router.delete("/admin/members/clear-all")
+async def clear_all_members(_: str = Depends(require_admin)):
+    res = await db.members.delete_many({})
+    return {"ok": True, "deleted_count": res.deleted_count}
+
+
+@api_router.delete("/admin/members/{member_id}")
+async def delete_member(member_id: str, _: str = Depends(require_admin)):
+    res = await db.members.delete_one({"id": member_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Membro não encontrado")
+    return {"ok": True}
 
 
 @api_router.get("/admin/stats")
