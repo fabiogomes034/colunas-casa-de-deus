@@ -1,4 +1,3 @@
-
 export const colors = {
   // Paleta Soft Light & Neumorfismo
   background: "#EEF1F6",
@@ -68,3 +67,39 @@ export const font = {
     black: "800" as const,
   },
 };
+
+export type TierKey = "bronze" | "prata" | "ouro";
+
+export const tierMeta: Record<
+  TierKey,
+  { label: string; amount: number; color: string; lightColor: string; description: string }
+> = {
+  bronze: {
+    label: "Coluna Bronze",
+    amount: 50,
+    color: colors.bronze,
+    lightColor: colors.bronzeLight,
+    description: "Sustenta os passos iniciais da edificação.",
+  },
+  prata: {
+    label: "Coluna Prata",
+    amount: 70,
+    color: colors.prata,
+    lightColor: colors.prataLight,
+    description: "Fortalece a estrutura contínua do ministério.",
+  },
+  ouro: {
+    label: "Coluna Ouro",
+    amount: 100,
+    color: colors.ouro,
+    lightColor: colors.ouroLight,
+    description: "Impulsiona grandes avanços na Casa de Deus.",
+  },
+};
+
+export function formatBRL(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+}
