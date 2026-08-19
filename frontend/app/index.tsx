@@ -22,10 +22,11 @@ export default function Home() {
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
+          {/* Card Hero com iluminação */}
           <View style={styles.hero} testID="home-hero">
             <Image source={{ uri: HERO }} style={StyleSheet.absoluteFill} contentFit="cover" />
             <LinearGradient
-              colors={["rgba(11,17,32,0.15)", "rgba(11,17,32,0.55)", "rgba(11,17,32,0.98)"]}
+              colors={["rgba(238,241,246,0.1)", "rgba(29,36,51,0.5)", "rgba(29,36,51,0.92)"]}
               style={StyleSheet.absoluteFill}
             />
             <View style={styles.heroContent}>
@@ -44,12 +45,17 @@ export default function Home() {
               Colunas da{"\n"}Casa de Deus
             </Text>
 
+            {/* Card do Versículo em estilo Soft Light */}
             <View style={styles.verseCard} testID="home-verse-card">
-              <Ionicons name="sparkles" size={22} color={colors.brand} />
+              <View style={styles.verseHeader}>
+                <View style={styles.verseIconCircle}>
+                  <Ionicons name="sparkles" size={16} color="#FFFFFF" />
+                </View>
+                <Text style={styles.verseRef}>2 Coríntios 9:7</Text>
+              </View>
               <Text style={styles.verseText}>
                 "Cada um contribua segundo propôs no seu coração... Deus ama a quem dá com alegria."
               </Text>
-              <Text style={styles.verseRef}>2 Coríntios 9:7</Text>
             </View>
 
             <Text style={styles.leadText}>
@@ -81,76 +87,94 @@ export default function Home() {
 const styles = StyleSheet.create({
   scroll: { flexGrow: 1, paddingBottom: spacing.xxxl },
   hero: {
-    height: 320,
+    height: 290,
     marginHorizontal: spacing.lg,
     marginTop: spacing.md,
     borderRadius: radius.xl,
     overflow: "hidden",
     justifyContent: "flex-end",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 5,
   },
   heroContent: { padding: spacing.xl },
   badge: {
     alignSelf: "flex-start",
-    backgroundColor: "rgba(37,99,235,0.85)",
+    backgroundColor: colors.brand,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: radius.pill,
     marginBottom: spacing.md,
   },
   badgeText: {
     color: colors.onBrand,
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: font.weight.bold,
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
   },
   church: {
-    color: colors.onSurface,
+    color: "#FFFFFF",
     fontSize: font.size.lg,
     fontWeight: font.weight.black,
     letterSpacing: 0.5,
   },
   churchSub: {
-    color: colors.onSurfaceMuted,
+    color: "rgba(255,255,255,0.8)",
     fontSize: font.size.base,
     marginTop: 2,
+    fontWeight: font.weight.medium,
   },
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
   title: {
     color: colors.onSurface,
     fontSize: font.size.display,
     fontWeight: font.weight.black,
-    lineHeight: 40,
+    lineHeight: 38,
     letterSpacing: -0.5,
   },
   verseCard: {
     marginTop: spacing.xl,
-    backgroundColor: colors.cardTint,
+    backgroundColor: colors.card,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.sm,
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
+    shadowColor: "#A3B1C6",
+    shadowOpacity: 0.35,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    shadowOffset: { width: 4, height: 6 },
+    elevation: 3,
+  },
+  verseHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  verseIconCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: colors.brand,
+    alignItems: "center",
+    justifyContent: "center",
   },
   verseText: {
-    color: colors.cardText,
+    color: colors.onSurfaceMuted,
     fontSize: font.size.base,
-    lineHeight: 24,
+    lineHeight: 22,
     fontStyle: "italic",
   },
   verseRef: {
     color: colors.brand,
     fontSize: font.size.sm,
     fontWeight: font.weight.bold,
-    letterSpacing: 0.5,
   },
   leadText: {
     color: colors.onSurfaceMuted,
     fontSize: font.size.base,
-    lineHeight: 24,
-    marginTop: spacing.xl,
+    lineHeight: 22,
+    marginTop: spacing.lg,
   },
   adminLink: {
     marginTop: spacing.xl,
