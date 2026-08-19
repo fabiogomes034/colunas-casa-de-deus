@@ -15,7 +15,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import QRCode from "react-native-qrcode-svg";
 
-import { api } from "@/src/lib/api";
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
 import { colors, spacing, radius, font, tierMeta, formatBRL, TierKey } from "@/src/lib/theme";
@@ -38,8 +37,9 @@ export default function Payment() {
 
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Chave PIX oficial configurada
   const pixKey = "+55 41 99224-6602";
 
   const handleCopyPix = () => {
@@ -50,21 +50,31 @@ export default function Payment() {
 
   const handleConfirmPayment = async () => {
     setLoading(true);
-    setErrorMessage(null);
+    setErrorMsg(null);
 
     try {
-      // Monta o payload garantindo tipos primitivos limpos
-      const payload = {
-        name: String(name),
-        phone: String(phone),
-        tier: String(tierKey),
-        amount: Number(amount),
-        status: "pago",
-        paidAt: new Date().toISOString(),
-      };
+      // 1. Envia requisição direta ao backend via fetch nativo
+      const response = await fetch("/api/members", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: String(name),
+          phone: String(phone),
+          tier: String(tierKey),
+          amount: Number(amount),
+          status: "pago",
+          paidAt: new Date().toISOString(),
+        }),
+      });
 
-      await api.post("/members", payload);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || `Erro HTTP ${response.status}`);
+      }
 
+      // 2. Sucesso: avança para o certificado
       router.push({
         pathname: "/certificate",
         params: {
@@ -75,18 +85,13 @@ export default function Payment() {
     } catch (error: any) {
       console.error("Erro ao registrar pagamento:", error);
       
-      const serverMsg =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Falha na comunicação com o servidor.";
+      const serverDetails = error.message || "Erro de conexão com o servidor.";
+      setErrorMsg(serverDetails);
 
-      setErrorMessage(`Erro (${error.response?.status || 'conexão'}): ${serverMsg}`);
-
-      if (Platform.OS === "web") {
-        window.alert(`Erro ao confirmar: ${serverMsg}`);
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.alert(`Erro ao confirmar: ${serverDetails}`);
       } else {
-        Alert.alert("Atenção", `Erro ao confirmar: ${serverMsg}`);
+        Alert.alert("Erro ao confirmar", serverDetails);
       }
     } finally {
       setLoading(false);
@@ -159,11 +164,11 @@ export default function Payment() {
             </View>
           </View>
 
-          {/* Mensagem de Erro Visível caso o backend recuse */}
-          {errorMessage && (
+          {/* Alerta Visual de Erro */}
+          {errorMsg && (
             <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={20} color="#FF3B30" />
-              <Text style={styles.errorText}>{errorMessage}</Text>
+              <Ionicons name="alert-circle" size={20} color="#D32F2F" />
+              <Text style={styles.errorText}>{errorMsg}</Text>
             </View>
           )}
 
@@ -348,17 +353,17 @@ const styles = StyleSheet.create({
     color: colors.brand,
   },
   errorBox: {
-    backgroundColor: "#FFE5E5",
+    backgroundColor: "#FEE2E2",
     borderRadius: radius.md,
     padding: spacing.md,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: "#FF3B30",
+    borderColor: "#EF4444",
   },
   errorText: {
-    color: "#D32F2F",
+    color: "#B91C1C",
     fontSize: font.size.xs,
     fontWeight: font.weight.medium,
     flex: 1,
