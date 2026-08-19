@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { View, StyleSheet } from "react-native";
 import { colors } from "@/src/lib/theme";
+import { AuthProvider } from "@/src/lib/auth";
 
 export default function RootLayout() {
   const CustomTheme = {
@@ -19,16 +20,18 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={CustomTheme}>
-      <View style={styles.container}>
-        <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-            animation: "slide_from_right",
-          }}
-        />
-      </View>
+      <AuthProvider>
+        <View style={styles.container}>
+          <StatusBar style="dark" />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+              animation: "slide_from_right",
+            }}
+          />
+        </View>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
@@ -38,4 +41,4 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-});
+}); 
