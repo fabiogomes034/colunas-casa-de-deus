@@ -1,74 +1,88 @@
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle, StyleProp } from "react-native";
-import { colors, radius, font } from "../lib/theme";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  ViewStyle,
+  TextStyle,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors, radius, spacing, font } from "@/src/lib/theme";
 
-type Props = {
+interface PrimaryButtonProps {
   title: string;
-  onPress?: () => void;
-  color?: string;
-  textColor?: string;
-  disabled?: boolean;
+  onPress: () => void;
   loading?: boolean;
-  variant?: "solid" | "outline" | "ghost";
-  style?: StyleProp<ViewStyle>;
+  disabled?: boolean;
+  style?: ViewStyle;
+  textStyle?: TextStyle;
   testID?: string;
-};
+}
 
 export function PrimaryButton({
   title,
   onPress,
-  color = colors.brand,
-  textColor = colors.onBrand,
-  disabled,
-  loading,
-  variant = "solid",
+  loading = false,
+  disabled = false,
   style,
+  textStyle,
   testID,
-}: Props) {
-  const isSolid = variant === "solid";
-  const isOutline = variant === "outline";
+}: PrimaryButtonProps) {
   return (
     <Pressable
-      testID={testID}
       onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => [
-        styles.base,
-        isSolid && { backgroundColor: color },
-        isOutline && { backgroundColor: "transparent", borderWidth: 2, borderColor: color },
-        variant === "ghost" && { backgroundColor: "transparent" },
-        (disabled || loading) && { opacity: 0.6 },
-        pressed && !disabled && { transform: [{ scale: 0.98 }], opacity: 0.9 },
+        styles.wrapper,
         style,
+        pressed && styles.pressed,
+        disabled && styles.disabled,
       ]}
+      testID={testID}
     >
-      {loading ? (
-        <ActivityIndicator color={isSolid ? textColor : color} />
-      ) : (
-        <Text
-          style={[
-            styles.text,
-            { color: isSolid ? textColor : color },
-          ]}
-        >
-          {title}
-        </Text>
-      )}
+      <LinearGradient
+        colors={[colors.brandLight, colors.brand]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.onBrand} />
+        ) : (
+          <Text style={[styles.text, textStyle]}>{title}</Text>
+        )}
+      </LinearGradient>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  base: {
-    minHeight: 52,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: radius.lg,
+  wrapper: {
+    borderRadius: radius.md,
+    overflow: "hidden",
+    shadowColor: colors.brand,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  gradient: {
+    height: 52,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: spacing.xl,
+  },
+  pressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
+  },
+  disabled: {
+    opacity: 0.5,
   },
   text: {
-    fontSize: font.size.lg,
+    color: colors.onBrand,
+    fontSize: font.size.base,
     fontWeight: font.weight.bold,
     letterSpacing: 0.3,
   },
