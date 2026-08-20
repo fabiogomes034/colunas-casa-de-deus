@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -23,6 +23,7 @@ import Animated, {
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
 import { colors, spacing, radius, font, tierMeta, TierKey } from "@/src/lib/theme";
+import { api } from "@/src/lib/api";
 
 const TIERS: TierKey[] = ["bronze", "prata", "ouro"];
 
@@ -77,6 +78,52 @@ export default function Register() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // --- Reconhecimento de membro recorrente pelo WhatsApp ---
+  const [welcomeBack, setWelcomeBack] = useState<string | null>(null);
+  const [checkingWhatsapp, setCheckingWhatsapp] = useState(false);
+  const lookupTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const digits = phone.replace(/\D/g, "");
+
+    // Limpa o aviso se a pessoa apagar/editar o número
+    if (digits.length < 11) {
+      setWelcomeBack(null);
+      if (lookupTimeout.current) clearTimeout(lookupTimeout.current);
+      return;
+    }
+
+    if (lookupTimeout.current) clearTimeout(lookupTimeout.current);
+    lookupTimeout.current = setTimeout(async () => {
+      setCheckingWhatsapp(true);
+      try {
+        const history = await api.getByWhatsapp(digits);
+        if (history.length > 0) {
+          const latest = history[0];
+          // Só preenche o nome automaticamente se a pessoa ainda não tiver digitado nada,
+          // pra não sobrescrever alguém digitando os dados de outra pessoa nesse aparelho.
+          setName((current) => (current.trim() ? current : latest.name));
+          if (TIERS.includes(latest.level as TierKey)) {
+            setSelectedTier(latest.level as TierKey);
+          }
+          const firstName = latest.name.trim().split(" ")[0];
+          setWelcomeBack(`Bem-vindo de volta, ${firstName}! 👋`);
+        } else {
+          setWelcomeBack(null);
+        }
+      } catch (e) {
+        // Falha silenciosa: não bloqueia o cadastro se a consulta der erro
+        setWelcomeBack(null);
+      } finally {
+        setCheckingWhatsapp(false);
+      }
+    }, 500);
+
+    return () => {
+      if (lookupTimeout.current) clearTimeout(lookupTimeout.current);
+    };
+  }, [phone]);
 
   const handlePhoneChange = (text: string) => {
     const raw = text.replace(/\D/g, "");
@@ -184,6 +231,15 @@ export default function Register() {
                     testID="register-phone-input"
                   />
                 </View>
+                {checkingWhatsapp && (
+                  <Text style={styles.checkingText}>Verificando...</Text>
+                )}
+                {!checkingWhatsapp && welcomeBack && (
+                  <Animated.View entering={FadeInDown.duration(350)} style={styles.welcomeBanner}>
+                    <Ionicons name="sparkles" size={14} color={colors.brand} />
+                    <Text style={styles.welcomeBannerText}>{welcomeBack}</Text>
+                  </Animated.View>
+                )}
               </View>
 
               <View>
@@ -325,6 +381,30 @@ const styles = StyleSheet.create({
     fontSize: font.size.base,
     color: colors.onSurface,
     fontWeight: font.weight.medium,
+  },
+  checkingText: {
+    fontSize: 11,
+    color: colors.onSurfaceLo,
+    marginTop: 6,
+    fontStyle: "italic",
+  },
+  welcomeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colors.background,
+    borderRadius: radius.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.brand,
+    alignSelf: "flex-start",
+  },
+  welcomeBannerText: {
+    fontSize: 12,
+    fontWeight: font.weight.bold,
+    color: colors.brand,
   },
   tierSelectRow: {
     flexDirection: "row",
