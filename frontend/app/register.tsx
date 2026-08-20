@@ -13,12 +13,57 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
 import { colors, spacing, radius, font, tierMeta, TierKey } from "@/src/lib/theme";
 
 const TIERS: TierKey[] = ["bronze", "prata", "ouro"];
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Pressable com "afundada" suave ao tocar (spring)
+function PressScale({
+  children,
+  onPress,
+  style,
+  testID,
+  entering,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style: any;
+  testID?: string;
+  entering?: any;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      }}
+      style={[style, animatedStyle]}
+      testID={testID}
+      entering={entering}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
 
 export default function Register() {
   const router = useRouter();
@@ -84,28 +129,31 @@ export default function Register() {
           >
             {/* Cabeçalho */}
             <View style={styles.header}>
-              <Pressable
+              <PressScale
                 onPress={() => router.back()}
                 style={styles.backButton}
                 testID="register-back-btn"
               >
                 <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
-              </Pressable>
+              </PressScale>
               <Text style={styles.headerTitle}>Seja uma coluna</Text>
               <View style={{ width: 40 }} />
             </View>
 
             {/* Texto Hero */}
-            <View style={styles.leadContainer}>
+            <Animated.View entering={FadeInDown.duration(500)} style={styles.leadContainer}>
               <Text style={styles.eyebrow}>PASSO 1 DE 2</Text>
               <Text style={styles.title}>Conte pra gente{"\n"}quem é você</Text>
               <Text style={styles.subtitle}>
                 Seus dados ficam só com a tesouraria da igreja, usados apenas para lembrete mensal e certificado.
               </Text>
-            </View>
+            </Animated.View>
 
             {/* Card do Formulário */}
-            <View style={styles.formCard}>
+            <Animated.View
+              entering={FadeInDown.duration(500).delay(100)}
+              style={styles.formCard}
+            >
               <View>
                 <Text style={styles.fieldLabel}>NOME COMPLETO</Text>
                 <View style={styles.inputContainer}>
@@ -146,7 +194,7 @@ export default function Register() {
                     const isSelected = selectedTier === tier;
 
                     return (
-                      <Pressable
+                      <PressScale
                         key={tier}
                         onPress={() => setSelectedTier(tier)}
                         style={[styles.tierOption, isSelected && styles.tierOptionSelected]}
@@ -160,27 +208,32 @@ export default function Register() {
                           {item.label.replace("Coluna ", "")}
                         </Text>
                         <Text style={styles.tierPrice}>R$ {item.amount}</Text>
-                      </Pressable>
+                      </PressScale>
                     );
                   })}
                 </View>
               </View>
-            </View>
+            </Animated.View>
 
             {error && <Text style={styles.errorText}>{error}</Text>}
 
-            <PrimaryButton
-              title="Continuar para pagamento"
-              onPress={handleContinue}
-              loading={loading}
-              testID="register-submit-btn"
-              style={{ marginTop: spacing.lg }}
-            />
+            <Animated.View entering={FadeInDown.duration(500).delay(200)}>
+              <PrimaryButton
+                title="Continuar para pagamento"
+                onPress={handleContinue}
+                loading={loading}
+                testID="register-submit-btn"
+                style={{ marginTop: spacing.lg }}
+              />
+            </Animated.View>
 
-            <View style={styles.trustRow}>
+            <Animated.View
+              entering={FadeInDown.duration(450).delay(280)}
+              style={styles.trustRow}
+            >
               <Ionicons name="shield-checkmark-outline" size={14} color={colors.onSurfaceLo} />
               <Text style={styles.trustText}>Seus dados estão seguros</Text>
-            </View>
+            </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
