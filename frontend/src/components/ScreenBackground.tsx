@@ -10,7 +10,7 @@ interface ScreenBackgroundProps {
 export function ScreenBackground({ children }: ScreenBackgroundProps) {
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <LinearGradient
         colors={[colors.background, colors.backgroundAlt]}
         style={StyleSheet.absoluteFill}
