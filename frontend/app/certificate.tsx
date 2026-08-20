@@ -12,10 +12,56 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  FadeInDown,
+  ZoomIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
 import { colors, spacing, radius, font, tierMeta, TierKey } from "@/src/lib/theme";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Pressable com "afundada" suave ao tocar (spring)
+function PressScale({
+  children,
+  onPress,
+  style,
+  testID,
+  entering,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style: any;
+  testID?: string;
+  entering?: any;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      }}
+      style={[style, animatedStyle]}
+      testID={testID}
+      entering={entering}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
 
 export default function Certificate() {
   const router = useRouter();
@@ -54,33 +100,46 @@ export default function Certificate() {
         >
           {/* Cabeçalho */}
           <View style={styles.header}>
-            <Pressable
+            <PressScale
               onPress={() => router.push("/")}
               style={styles.backButton}
               testID="certificate-home-btn"
             >
               <Ionicons name="home-outline" size={20} color={colors.onSurface} />
-            </Pressable>
+            </PressScale>
             <Text style={styles.headerTitle}>Certificado</Text>
             <View style={{ width: 40 }} />
           </View>
 
           {/* Destaque / Celebração */}
           <View style={styles.confettiSection}>
-            <LinearGradient
-              colors={[colors.ouroLight, colors.ouro]}
-              style={styles.badgeIcon}
+            <Animated.View entering={ZoomIn.duration(550).delay(80)}>
+              <LinearGradient
+                colors={[colors.ouroLight, colors.ouro]}
+                style={styles.badgeIcon}
+              >
+                <Ionicons name="star" size={28} color="#FFFFFF" />
+              </LinearGradient>
+            </Animated.View>
+            <Animated.Text
+              entering={FadeInDown.duration(450).delay(220)}
+              style={styles.celebrateTitle}
             >
-              <Ionicons name="star" size={28} color="#FFFFFF" />
-            </LinearGradient>
-            <Text style={styles.celebrateTitle}>Você é uma coluna! 🎉</Text>
-            <Text style={styles.celebrateSubtitle}>
+              Você é uma coluna! 🎉
+            </Animated.Text>
+            <Animated.Text
+              entering={FadeInDown.duration(450).delay(280)}
+              style={styles.celebrateSubtitle}
+            >
               Obrigado por sustentar e edificar a Casa de Deus
-            </Text>
+            </Animated.Text>
           </View>
 
           {/* Cartão do Certificado Soft Light */}
-          <View style={styles.certCard}>
+          <Animated.View
+            entering={FadeInDown.duration(550).delay(340)}
+            style={styles.certCard}
+          >
             <View style={styles.certGlow} />
 
             <Text style={styles.certEyebrow}>CERTIFICADO DE CONTRIBUIÇÃO</Text>
@@ -103,34 +162,39 @@ export default function Certificate() {
             </View>
 
             <Text style={styles.certDate}>Emitido em agosto de 2026</Text>
-          </View>
+          </Animated.View>
 
           {/* Botões de Ação */}
-          <View style={styles.actionsRow}>
-            <Pressable
+          <Animated.View
+            entering={FadeInDown.duration(500).delay(460)}
+            style={styles.actionsRow}
+          >
+            <PressScale
               onPress={handleDownload}
               style={[styles.actionBtn, styles.actionPrimary]}
               testID="certificate-download-btn"
             >
               <Ionicons name="download-outline" size={18} color="#FFFFFF" />
               <Text style={styles.actionPrimaryText}>Baixar</Text>
-            </Pressable>
+            </PressScale>
 
-            <Pressable
+            <PressScale
               onPress={handleShare}
               style={[styles.actionBtn, styles.actionSecondary]}
               testID="certificate-share-btn"
             >
               <Ionicons name="share-social-outline" size={18} color={colors.onSurface} />
               <Text style={styles.actionSecondaryText}>Compartilhar</Text>
-            </Pressable>
-          </View>
+            </PressScale>
+          </Animated.View>
 
-          <PrimaryButton
-            title="Voltar ao Início"
-            onPress={() => router.push("/")}
-            style={{ marginTop: spacing.sm }}
-          />
+          <Animated.View entering={FadeInDown.duration(500).delay(520)}>
+            <PrimaryButton
+              title="Voltar ao Início"
+              onPress={() => router.push("/")}
+              style={{ marginTop: spacing.sm }}
+            />
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </ScreenBackground>
