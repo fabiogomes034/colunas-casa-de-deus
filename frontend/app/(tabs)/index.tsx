@@ -4,11 +4,57 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { colors, spacing, radius, font, tierMeta, formatBRL, TierKey } from "@/src/lib/theme";
 
 const NÍVEIS: TierKey[] = ["bronze", "prata", "ouro"];
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Pressable com "afundada" suave ao tocar (spring)
+function PressScale({
+  children,
+  onPress,
+  style,
+  testID,
+  entering,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style: any;
+  testID?: string;
+  entering?: any;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      }}
+      style={[style, animatedStyle]}
+      testID={testID}
+      entering={entering}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
@@ -25,7 +71,7 @@ export default function Home() {
           showsVerticalScrollIndicator={false}
         >
           {/* Cabeçalho compacto */}
-          <View style={styles.header}>
+          <Animated.View entering={FadeInDown.duration(500)} style={styles.header}>
             <View style={styles.headerLeft}>
               <LinearGradient
                 colors={[colors.brandLight, colors.brand]}
@@ -41,10 +87,14 @@ export default function Home() {
             <View style={styles.badge}>
               <Text style={styles.badgeText}>2026</Text>
             </View>
-          </View>
+          </Animated.View>
 
           {/* Card de projeto */}
-          <View style={styles.projectCard} testID="home-project-card">
+          <Animated.View
+            entering={FadeInDown.duration(500).delay(100)}
+            style={styles.projectCard}
+            testID="home-project-card"
+          >
             <Text style={styles.projectEyebrow}>PROJETO DE EDIFICAÇÃO</Text>
             <Text style={styles.projectTitle} testID="home-project-title">
               Colunas da Casa de Deus
@@ -53,31 +103,35 @@ export default function Home() {
               Seja uma coluna que sustenta, provê e edifica a obra do Senhor em nossa cidade.
             </Text>
 
-            <Pressable
+            <PressScale
               onPress={() => router.push("/colunas" as any)}
               style={styles.projectCta}
               testID="home-cta-button"
             >
               <Text style={styles.projectCtaText}>Quero Ser Uma Coluna</Text>
               <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-            </Pressable>
-          </View>
+            </PressScale>
+          </Animated.View>
 
           {/* Acesso rápido aos 3 níveis */}
-          <View style={styles.sectionHeader}>
+          <Animated.View
+            entering={FadeInDown.duration(500).delay(180)}
+            style={styles.sectionHeader}
+          >
             <Text style={styles.sectionTitle}>Seja uma coluna</Text>
             <Text style={styles.sectionCount}>3 níveis</Text>
-          </View>
+          </Animated.View>
 
           <View style={styles.tiersRow}>
-            {NÍVEIS.map((key) => {
+            {NÍVEIS.map((key, index) => {
               const item = tierMeta[key];
               return (
-                <Pressable
+                <PressScale
                   key={key}
                   onPress={() => goToTier(key, item.amount)}
                   style={styles.tierChip}
                   testID={`home-tier-${key}`}
+                  entering={FadeInDown.duration(450).delay(220 + index * 90)}
                 >
                   <LinearGradient
                     colors={[item.lightColor, item.color]}
@@ -87,13 +141,17 @@ export default function Home() {
                   </LinearGradient>
                   <Text style={styles.tierChipLabel}>{item.label.replace("Coluna ", "")}</Text>
                   <Text style={styles.tierChipPrice}>{formatBRL(item.amount)}</Text>
-                </Pressable>
+                </PressScale>
               );
             })}
           </View>
 
           {/* Versículo, agora discreto */}
-          <View style={styles.verseCard} testID="home-verse-card">
+          <Animated.View
+            entering={FadeInUp.duration(500).delay(500)}
+            style={styles.verseCard}
+            testID="home-verse-card"
+          >
             <View style={styles.verseIconCircle}>
               <Ionicons name="sparkles" size={14} color="#FFFFFF" />
             </View>
@@ -104,7 +162,7 @@ export default function Home() {
               </Text>
               <Text style={styles.verseRef}>2 Coríntios 9:7</Text>
             </View>
-          </View>
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </ScreenBackground>
