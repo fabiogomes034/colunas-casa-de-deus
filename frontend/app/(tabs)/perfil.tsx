@@ -4,9 +4,54 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { colors, spacing, radius, font } from "@/src/lib/theme";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Pressable com "afundada" suave ao tocar (spring)
+function PressScale({
+  children,
+  onPress,
+  style,
+  testID,
+  entering,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style: any;
+  testID?: string;
+  entering?: any;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      }}
+      style={[style, animatedStyle]}
+      testID={testID}
+      entering={entering}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
 
 export default function PerfilTab() {
   const router = useRouter();
@@ -15,7 +60,7 @@ export default function PerfilTab() {
     <ScreenBackground>
       <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
+          <Animated.View entering={FadeInDown.duration(500)} style={styles.header}>
             <LinearGradient
               colors={[colors.brandLight, colors.brand]}
               style={styles.avatar}
@@ -26,20 +71,24 @@ export default function PerfilTab() {
               <Text style={styles.title}>Igreja Visão Missionária</Text>
               <Text style={styles.subtitle}>Sede Porto União</Text>
             </View>
-          </View>
+          </Animated.View>
 
-          <View style={styles.card}>
+          <Animated.View
+            entering={FadeInDown.duration(500).delay(100)}
+            style={styles.card}
+          >
             <Text style={styles.cardTitle}>Sobre o projeto</Text>
             <Text style={styles.cardText}>
               "Colunas da Casa de Deus" é o projeto de contribuição mensal que sustenta a obra da
               igreja em nossa cidade. Cada coluna, no seu nível, fortalece a edificação.
             </Text>
-          </View>
+          </Animated.View>
 
-          <Pressable
+          <PressScale
             style={styles.linkRow}
             onPress={() => Linking.openURL("https://wa.me/5541992246602")}
             testID="perfil-whatsapp"
+            entering={FadeInDown.duration(450).delay(200)}
           >
             <View style={styles.linkIconWrap}>
               <Ionicons name="logo-whatsapp" size={18} color={colors.success} />
@@ -49,12 +98,13 @@ export default function PerfilTab() {
               <Text style={styles.linkSub}>Dúvidas sobre sua contribuição</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
-          </Pressable>
+          </PressScale>
 
-          <Pressable
+          <PressScale
             style={styles.linkRow}
             onPress={() => router.push("/admin/login")}
             testID="perfil-admin-link"
+            entering={FadeInDown.duration(450).delay(280)}
           >
             <View style={styles.linkIconWrap}>
               <Ionicons name="lock-closed-outline" size={18} color={colors.brand} />
@@ -64,11 +114,14 @@ export default function PerfilTab() {
               <Text style={styles.linkSub}>Painel administrativo</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
-          </Pressable>
+          </PressScale>
 
-          <Text style={styles.footerNote}>
+          <Animated.Text
+            entering={FadeInDown.duration(450).delay(360)}
+            style={styles.footerNote}
+          >
             Colunas da Casa de Deus · Projeto 2026
-          </Text>
+          </Animated.Text>
         </ScrollView>
       </SafeAreaView>
     </ScreenBackground>
