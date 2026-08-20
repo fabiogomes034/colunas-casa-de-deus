@@ -209,6 +209,18 @@ async def mark_paid(member_id: str):
     return ConfirmResponse(ok=True, status="aguardando_confirmacao")
 
 
+# NOVO: precisa vir ANTES de "/members/{member_id}", senão o FastAPI
+# tentaria interpretar "by-whatsapp" como se fosse um member_id.
+@api_router.get("/members/by-whatsapp/{whatsapp}", response_model=List[Member])
+async def get_members_by_whatsapp(whatsapp: str):
+    digits = re.sub(r"\D", "", whatsapp)
+    if len(digits) != 11:
+        raise HTTPException(status_code=400, detail="WhatsApp deve conter 11 dígitos (DDD + número)")
+    cursor = db.members.find({"whatsapp": digits}, {"_id": 0}).sort("created_at", -1)
+    docs = await cursor.to_list(100)
+    return [serialize_member(d) for d in docs]
+
+
 @api_router.get("/members/{member_id}", response_model=Member)
 async def get_member(member_id: str):
     doc = await db.members.find_one({"id": member_id}, {"_id": 0})
