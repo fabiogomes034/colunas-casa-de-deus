@@ -13,12 +13,58 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
 import { colors, spacing, radius, font, tierMeta, formatBRL, TierKey } from "@/src/lib/theme";
 
 const NÍVEIS: TierKey[] = ["bronze", "prata", "ouro"];
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Pressable com "afundada" suave ao tocar (spring)
+function PressScale({
+  children,
+  onPress,
+  style,
+  testID,
+  entering,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style: any;
+  testID?: string;
+  entering?: any;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      }}
+      style={[style, animatedStyle]}
+      testID={testID}
+      entering={entering}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
 
 export default function ColunasTab() {
   const router = useRouter();
@@ -54,23 +100,24 @@ export default function ColunasTab() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <View style={styles.leadContainer}>
+            <Animated.View entering={FadeInDown.duration(500)} style={styles.leadContainer}>
               <Text style={styles.eyebrow}>PROJETO DE EDIFICAÇÃO</Text>
               <Text style={styles.title}>Qual pilar você deseja levantar?</Text>
               <Text style={styles.subtitle}>
                 Escolha o valor mensal que tocar no seu coração para apoiar a Casa de Deus.
               </Text>
-            </View>
+            </Animated.View>
 
             <View style={styles.tilesContainer}>
-              {NÍVEIS.map((key) => {
+              {NÍVEIS.map((key, index) => {
                 const item = tierMeta[key];
                 return (
-                  <Pressable
+                  <PressScale
                     key={key}
                     onPress={() => goTo(key, item.amount)}
                     style={styles.tileCard}
                     testID={`tier-card-${key}`}
+                    entering={FadeInDown.duration(450).delay(120 + index * 100)}
                   >
                     <LinearGradient
                       colors={[item.lightColor, item.color]}
@@ -93,12 +140,15 @@ export default function ColunasTab() {
                     </View>
 
                     <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
-                  </Pressable>
+                  </PressScale>
                 );
               })}
             </View>
 
-            <View style={styles.customCard}>
+            <Animated.View
+              entering={FadeInUp.duration(500).delay(420)}
+              style={styles.customCard}
+            >
               <Text style={styles.customTitle}>Outro Valor no Coração</Text>
               <Text style={styles.customSubtitle}>
                 Digite um valor personalizado caso queira contribuir com outra quantia.
@@ -128,7 +178,7 @@ export default function ColunasTab() {
                 testID="custom-amount-btn"
                 style={{ marginTop: spacing.md }}
               />
-            </View>
+            </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
