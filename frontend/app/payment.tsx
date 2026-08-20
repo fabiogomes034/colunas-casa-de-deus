@@ -14,11 +14,56 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import QRCode from "react-native-qrcode-svg";
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 import { api, Level } from "@/src/lib/api";
 import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { PrimaryButton } from "@/src/components/PrimaryButton";
 import { colors, spacing, radius, font, tierMeta, formatBRL, TierKey } from "@/src/lib/theme";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Pressable com "afundada" suave ao tocar (spring)
+function PressScale({
+  children,
+  onPress,
+  style,
+  testID,
+  entering,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style: any;
+  testID?: string;
+  entering?: any;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      }}
+      style={[style, animatedStyle]}
+      testID={testID}
+      entering={entering}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
 
 export default function Payment() {
   const router = useRouter();
@@ -111,19 +156,19 @@ export default function Payment() {
         >
           {/* Cabeçalho */}
           <View style={styles.header}>
-            <Pressable
+            <PressScale
               onPress={() => router.back()}
               style={styles.backButton}
               testID="payment-back-btn"
             >
               <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
-            </Pressable>
+            </PressScale>
             <Text style={styles.headerTitle}>Pagamento via Pix</Text>
             <View style={{ width: 40 }} />
           </View>
 
           {/* Card Resumo */}
-          <View style={styles.summaryCard}>
+          <Animated.View entering={FadeInDown.duration(500)} style={styles.summaryCard}>
             <LinearGradient
               colors={[meta.lightColor, meta.color]}
               style={styles.summaryIcon}
@@ -135,10 +180,13 @@ export default function Payment() {
               <Text style={styles.summarySub}>{meta.label} · mensalidade</Text>
             </View>
             <Text style={styles.summaryValue}>{formatBRL(amount)}</Text>
-          </View>
+          </Animated.View>
 
           {/* Card QR Code Soft Light */}
-          <View style={styles.qrCard}>
+          <Animated.View
+            entering={FadeInDown.duration(500).delay(120)}
+            style={styles.qrCard}
+          >
             <View style={styles.qrBox}>
               <QRCode
                 value={pixKey}
@@ -158,35 +206,37 @@ export default function Payment() {
             {/* Linha Copia e Cola */}
             <View style={styles.pixKeyRow}>
               <Text style={styles.pixKeyText} numberOfLines={1}>{pixKey}</Text>
-              <Pressable
+              <PressScale
                 onPress={handleCopyPix}
                 style={styles.copyBtn}
                 testID="payment-copy-btn"
               >
                 <Text style={styles.copyBtnText}>{copied ? "Copiado! ✓" : "Copiar"}</Text>
-              </Pressable>
+              </PressScale>
             </View>
-          </View>
+          </Animated.View>
 
           {/* Alerta Visual de Erro */}
           {errorMsg && (
-            <View style={styles.errorBox}>
+            <Animated.View entering={FadeInDown.duration(350)} style={styles.errorBox}>
               <Ionicons name="alert-circle" size={20} color="#D32F2F" />
               <Text style={styles.errorText}>{errorMsg}</Text>
-            </View>
+            </Animated.View>
           )}
 
           {/* Botão de Confirmação */}
-          <PrimaryButton
-            title="Já paguei"
-            onPress={handleConfirmPayment}
-            loading={loading}
-            testID="payment-confirm-btn"
-            style={{
-              backgroundColor: colors.success,
-              marginTop: spacing.md,
-            }}
-          />
+          <Animated.View entering={FadeInDown.duration(500).delay(220)}>
+            <PrimaryButton
+              title="Já paguei"
+              onPress={handleConfirmPayment}
+              loading={loading}
+              testID="payment-confirm-btn"
+              style={{
+                backgroundColor: colors.success,
+                marginTop: spacing.md,
+              }}
+            />
+          </Animated.View>
 
           {/* Indicador de Passos */}
           <View style={styles.stepsRow}>
