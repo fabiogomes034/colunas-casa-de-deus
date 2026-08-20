@@ -70,7 +70,7 @@ export const font = {
 
 export type TierKey = "bronze" | "prata" | "ouro";
 
-export const tierMeta: Record
+export const tierMeta: Record<
   TierKey,
   { label: string; amount: number; color: string; lightColor: string; description: string }
 > = {
@@ -102,4 +102,4 @@ export function formatBRL(value: number): string {
     style: "currency",
     currency: "BRL",
   }).format(value);
-}
+}"Corrige theme.ts completo"
