@@ -1,35 +1,35 @@
 export const colors = {
-  // Tema Neewick Dark Amber
-  background: "#0D0F14",
-  backgroundAlt: "#14171D",
-  surface: "#1C1F26",
-  card: "#1C1F26",
-  cardTint: "#20242C",
-  cardText: "#FFFFFF",
+  // Tema Black & Gold (base para efeito vidro fosco depois)
+  background: "#14120F",
+  backgroundAlt: "#1B1815",
+  surface: "#211D19",
+  card: "#211D19",
+  cardTint: "#26221D",
+  cardText: "#F5F1E8",
 
   // Tipografia / Textos
-  onSurface: "#FFFFFF",
-  onSurfaceMuted: "#9A9DA6",
-  onSurfaceLo: "#6C6F78",
-  onBrand: "#14171D",
+  onSurface: "#F5F1E8",
+  onSurfaceMuted: "#A39B8B",
+  onSurfaceLo: "#6E6558",
+  onBrand: "#1B1815",
 
   // Cores Institucionais
-  brand: "#F5A623",
-  brandLight: "#FFC94A",
+  brand: "#D4A24C",
+  brandLight: "#E8C179",
   accent: "#C9973F",
 
-  // Níveis (Bronze, Prata, Ouro) — ajustados ao tom âmbar
-  bronze: "#D98A0F",
-  bronzeLight: "#F5A623",
-  prata: "#8A6A2E",
-  prataLight: "#C9973F",
-  ouro: "#F5A623",
-  ouroLight: "#FFC94A",
+  // Níveis (Bronze, Prata, Ouro) — ajustados ao tom dourado
+  bronze: "#A9672B",
+  bronzeLight: "#C9973F",
+  prata: "#6E6558",
+  prataLight: "#A39B8B",
+  ouro: "#D4A24C",
+  ouroLight: "#E8C179",
 
   // Status
   success: "#22B573",
   error: "#E8543E",
-  border: "#262A32",
+  border: "#2E2A24",
 };
 
 export const spacing = {
@@ -70,7 +70,7 @@ export const font = {
 
 export type TierKey = "bronze" | "prata" | "ouro";
 
-export const tierMeta: Record<
+export const tierMeta: Record
   TierKey,
   { label: string; amount: number; color: string; lightColor: string; description: string }
 > = {
