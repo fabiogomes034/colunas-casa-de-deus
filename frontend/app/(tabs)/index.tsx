@@ -255,10 +255,9 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   projectLead: {
-    fontSize: font.size.sm,
-    color: colors.onSurfaceMuted,
-    lineHeight: 20,
-    marginTop: 8,
+     color: colors.cardTextMuted,
+  lineHeight: 20,
+  marginTop: 8,
   },
   projectCta: {
     marginTop: spacing.lg,
