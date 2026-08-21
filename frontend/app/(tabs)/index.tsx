@@ -1,21 +1,17 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { Image, Linking, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   FadeInDown,
-  FadeInUp,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
 
 import { ScreenBackground } from "@/src/components/ScreenBackground";
-import { colors, spacing, radius, font, tierMeta, formatBRL, TierKey } from "@/src/lib/theme";
-
-const NÍVEIS: TierKey[] = ["bronze", "prata", "ouro"];
+import { colors, spacing, radius, font } from "@/src/lib/theme";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -23,12 +19,16 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 function PressScale({
   children,
   onPress,
+  onLongPress,
+  delayLongPress,
   style,
   testID,
   entering,
 }: {
   children: React.ReactNode;
-  onPress: () => void;
+  onPress?: () => void;
+  onLongPress?: () => void;
+  delayLongPress?: number;
   style: any;
   testID?: string;
   entering?: any;
@@ -41,8 +41,10 @@ function PressScale({
   return (
     <AnimatedPressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={delayLongPress}
       onPressIn={() => {
-        scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+        scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
       }}
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 15, stiffness: 300 });
@@ -56,113 +58,123 @@ function PressScale({
   );
 }
 
-export default function Home() {
+export default function PerfilTab() {
   const router = useRouter();
 
-  const goToTier = (tier: string, amount: number) => {
-    router.push({ pathname: "/register", params: { tier, amount: String(amount) } });
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message:
+          "Conheça o app Colunas da Casa de Deus, da Igreja Visão Missionária - Sede Porto União: https://colunas-casa-de-deus.vercel.app",
+      });
+    } catch (error) {
+      // usuário cancelou ou houve erro no compartilhamento nativo
+    }
+  };
+
+  // Toque e segure no logo (~1.5s) abre o acesso do Pastor, sem botão visível
+  const handleLogoLongPress = () => {
+    router.push("/admin/login");
   };
 
   return (
     <ScreenBackground>
       <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Cabeçalho compacto */}
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.duration(500)} style={styles.header}>
-            <View style={styles.headerLeft}>
-              <LinearGradient
-                colors={[colors.brandLight, colors.brand]}
+            <PressScale
+              style={styles.avatarWrap}
+              onLongPress={handleLogoLongPress}
+              delayLongPress={1500}
+              testID="perfil-logo-longpress"
+              // No navegador, evita o menu nativo de "salvar imagem" no toque longo
+              {...(Platform.OS === "web"
+                ? { onContextMenu: (e: any) => e.preventDefault() }
+                : {})}
+            >
+              <Image
+                source={require("../../assets/images/logo-app.png")}
                 style={styles.avatar}
-              >
-                <Text style={styles.avatarText}>IVM</Text>
-              </LinearGradient>
-              <View>
-                <Text style={styles.eyebrow}>Sede Porto União</Text>
-                <Text style={styles.greeting}>Igreja Visão Missionária</Text>
-              </View>
-            </View>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>2026</Text>
+                resizeMode="contain"
+                draggable={false}
+                // Deixa o toque "atravessar" pro Pressable, em vez de a imagem
+                // capturar o gesto e abrir o menu do navegador
+                pointerEvents="none"
+              />
+            </PressScale>
+            <View>
+              <Text style={styles.title}>Igreja Visão Missionária</Text>
+              <Text style={styles.subtitle}>Sede Porto União</Text>
             </View>
           </Animated.View>
 
-          {/* Card de projeto */}
           <Animated.View
             entering={FadeInDown.duration(500).delay(100)}
-            style={styles.projectCard}
-            testID="home-project-card"
+            style={styles.card}
           >
-            <Text style={styles.projectEyebrow}>PROJETO DE EDIFICAÇÃO</Text>
-            <Text style={styles.projectTitle} testID="home-project-title">
-              Colunas da Casa de Deus
+            <Text style={styles.cardTitle}>Sobre o projeto</Text>
+            <Text style={styles.cardText}>
+              "Colunas da Casa de Deus" é o projeto de contribuição mensal que sustenta a obra da
+              igreja em nossa cidade. Cada coluna, no seu nível, fortalece a edificação.
             </Text>
-            <Text style={styles.projectLead}>
-              Seja uma coluna que sustenta, provê e edifica a obra do Senhor em nossa cidade.
-            </Text>
-
-            <PressScale
-              onPress={() => router.push("/colunas" as any)}
-              style={styles.projectCta}
-              testID="home-cta-button"
-            >
-              <Text style={styles.projectCtaText}>Quero Ser Uma Coluna</Text>
-              <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-            </PressScale>
           </Animated.View>
 
-          {/* Acesso rápido aos 3 níveis */}
-          <Animated.View
-            entering={FadeInDown.duration(500).delay(180)}
-            style={styles.sectionHeader}
+          {/* Acesso ao histórico de contribuições do membro */}
+          <PressScale
+            style={styles.linkRow}
+            onPress={() => router.push("/historico")}
+            testID="perfil-historico-link"
+            entering={FadeInDown.duration(450).delay(160)}
           >
-            <Text style={styles.sectionTitle}>Seja uma coluna</Text>
-            <Text style={styles.sectionCount}>3 níveis</Text>
-          </Animated.View>
-
-          <View style={styles.tiersRow}>
-            {NÍVEIS.map((key, index) => {
-              const item = tierMeta[key];
-              return (
-                <PressScale
-                  key={key}
-                  onPress={() => goToTier(key, item.amount)}
-                  style={styles.tierChip}
-                  testID={`home-tier-${key}`}
-                  entering={FadeInDown.duration(450).delay(220 + index * 90)}
-                >
-                  <LinearGradient
-                    colors={[item.lightColor, item.color]}
-                    style={styles.tierChipIcon}
-                  >
-                    <Text style={styles.tierChipLetter}>{key.charAt(0).toUpperCase()}</Text>
-                  </LinearGradient>
-                  <Text style={styles.tierChipLabel}>{item.label.replace("Coluna ", "")}</Text>
-                  <Text style={styles.tierChipPrice}>{formatBRL(item.amount)}</Text>
-                </PressScale>
-              );
-            })}
-          </View>
-
-          {/* Versículo, agora discreto */}
-          <Animated.View
-            entering={FadeInUp.duration(500).delay(500)}
-            style={styles.verseCard}
-            testID="home-verse-card"
-          >
-            <View style={styles.verseIconCircle}>
-              <Ionicons name="sparkles" size={14} color="#FFFFFF" />
+            <View style={styles.linkIconWrap}>
+              <Ionicons name="time-outline" size={18} color={colors.brand} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.verseText}>
-                "Cada um contribua segundo propôs no seu coração... Deus ama a quem dá com
-                alegria."
-              </Text>
-              <Text style={styles.verseRef}>2 Coríntios 9:7</Text>
+              <Text style={styles.linkTitle}>Meu histórico</Text>
+              <Text style={styles.linkSub}>Suas contribuições ao longo do tempo</Text>
             </View>
-          </Animated.View>
+            <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
+          </PressScale>
+
+          {/* Compartilhar o app */}
+          <PressScale
+            style={styles.linkRow}
+            onPress={handleShare}
+            testID="perfil-share-link"
+            entering={FadeInDown.duration(450).delay(200)}
+          >
+            <View style={styles.linkIconWrap}>
+              <Ionicons name="share-social-outline" size={18} color={colors.brand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>Compartilhar o app</Text>
+              <Text style={styles.linkSub}>Convide outros membros a participar</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
+          </PressScale>
+
+          <PressScale
+            style={styles.linkRow}
+            onPress={() => Linking.openURL("https://wa.me/5541992246602")}
+            testID="perfil-whatsapp"
+            entering={FadeInDown.duration(450).delay(260)}
+          >
+            <View style={styles.linkIconWrap}>
+              <Ionicons name="logo-whatsapp" size={18} color={colors.success} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>Falar com a tesouraria</Text>
+              <Text style={styles.linkSub}>Dúvidas sobre sua contribuição</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
+          </PressScale>
+
+          <Animated.Text
+            entering={FadeInDown.duration(450).delay(340)}
+            style={styles.footerNote}
+          >
+            Colunas da Casa de Deus · Projeto 2026
+          </Animated.Text>
         </ScrollView>
       </SafeAreaView>
     </ScreenBackground>
@@ -173,190 +185,102 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xxxl,
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: spacing.md,
+    marginBottom: spacing.sm,
   },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.md,
+  avatarWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.lg,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+    backgroundColor: colors.card,
+    ...(Platform.OS === "web"
+      ? ({
+          userSelect: "none",
+          WebkitUserSelect: "none",
+          WebkitTouchCallout: "none",
+        } as any)
+      : {}),
   },
-  avatarText: {
-    color: "#FFFFFF",
-    fontWeight: font.weight.black,
-    fontSize: 12,
+  avatar: {
+    width: "100%",
+    height: "100%",
   },
-  eyebrow: {
-    fontSize: 10.5,
-    fontWeight: font.weight.bold,
-    color: colors.onSurfaceMuted,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  greeting: {
-    fontSize: font.size.base,
+  title: {
+    fontSize: font.size.lg,
     fontWeight: font.weight.bold,
     color: colors.onSurface,
-    marginTop: 1,
   },
-  badge: {
+  subtitle: {
+    fontSize: font.size.xs,
+    color: colors.onSurfaceMuted,
+    marginTop: 2,
+  },
+  card: {
     backgroundColor: colors.card,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  badgeText: {
-    fontSize: 10.5,
-    fontWeight: font.weight.bold,
-    color: colors.brand,
-  },
-  projectCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     padding: spacing.lg,
     shadowColor: "#A3B1C6",
     shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 14,
-    elevation: 4,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  projectEyebrow: {
-    fontSize: 10.5,
+  cardTitle: {
+    fontSize: font.size.sm,
     fontWeight: font.weight.bold,
-    color: colors.brand,
-    letterSpacing: 1.1,
+    color: colors.onSurface,
     marginBottom: 6,
   },
-  projectTitle: {
-    fontSize: font.size.xl,
-    fontWeight: font.weight.black,
-    color: colors.onSurface,
-    lineHeight: 30,
-  },
-  projectLead: {
+  cardText: {
     fontSize: font.size.sm,
     color: colors.onSurfaceMuted,
     lineHeight: 20,
-    marginTop: 8,
   },
-  projectCta: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.brand,
-    borderRadius: radius.md,
-    height: 50,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  projectCtaText: {
-    color: "#FFFFFF",
-    fontSize: font.size.sm,
-    fontWeight: font.weight.bold,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  sectionTitle: {
-    fontSize: font.size.base,
-    fontWeight: font.weight.bold,
-    color: colors.onSurface,
-  },
-  sectionCount: {
-    fontSize: font.size.xs,
-    color: colors.onSurfaceMuted,
-  },
-  tiersRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  tierChip: {
-    flex: 1,
+  linkRow: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,
-    padding: spacing.sm,
-    alignItems: "flex-start",
-    gap: 6,
+    padding: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
     shadowColor: "#A3B1C6",
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 2,
   },
-  tierChipIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
+  linkIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
   },
-  tierChipLetter: {
-    color: "#FFFFFF",
-    fontWeight: font.weight.black,
-    fontSize: 12,
-  },
-  tierChipLabel: {
-    fontSize: 11.5,
+  linkTitle: {
+    fontSize: font.size.sm,
     fontWeight: font.weight.bold,
     color: colors.onSurface,
   },
-  tierChipPrice: {
-    fontSize: 10.5,
-    fontWeight: font.weight.medium,
-    color: colors.onSurfaceMuted,
-  },
-  verseCard: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    alignItems: "flex-start",
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  verseIconCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    backgroundColor: colors.brand,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 2,
-  },
-  verseText: {
-    color: colors.onSurfaceMuted,
+  linkSub: {
     fontSize: font.size.xs,
-    lineHeight: 18,
-    fontStyle: "italic",
+    color: colors.onSurfaceMuted,
+    marginTop: 1,
   },
-  verseRef: {
-    color: colors.brand,
-    fontSize: 10.5,
-    fontWeight: font.weight.bold,
-    marginTop: 4,
+  footerNote: {
+    textAlign: "center",
+    fontSize: font.size.xs,
+    color: colors.onSurfaceLo,
+    marginTop: spacing.lg,
   },
 });
