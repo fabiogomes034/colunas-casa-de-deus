@@ -1,5 +1,5 @@
 import React from "react";
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -56,6 +56,17 @@ function PressScale({
 export default function PerfilTab() {
   const router = useRouter();
 
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message:
+          "Conheça o app Colunas da Casa de Deus, da Igreja Visão Missionária - Sede Porto União: https://colunas-casa-de-deus.vercel.app",
+      });
+    } catch (error) {
+      // usuário cancelou ou houve erro no compartilhamento nativo
+    }
+  };
+
   return (
     <ScreenBackground>
       <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1 }}>
@@ -84,7 +95,7 @@ export default function PerfilTab() {
             </Text>
           </Animated.View>
 
-          {/* NOVO: acesso ao histórico de contribuições do membro */}
+          {/* Acesso ao histórico de contribuições do membro */}
           <PressScale
             style={styles.linkRow}
             onPress={() => router.push("/historico")}
@@ -101,11 +112,28 @@ export default function PerfilTab() {
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
           </PressScale>
 
+          {/* Compartilhar o app */}
+          <PressScale
+            style={styles.linkRow}
+            onPress={handleShare}
+            testID="perfil-share-link"
+            entering={FadeInDown.duration(450).delay(200)}
+          >
+            <View style={styles.linkIconWrap}>
+              <Ionicons name="share-social-outline" size={18} color={colors.brand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>Compartilhar o app</Text>
+              <Text style={styles.linkSub}>Convide outros membros a participar</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
+          </PressScale>
+
           <PressScale
             style={styles.linkRow}
             onPress={() => Linking.openURL("https://wa.me/5541992246602")}
             testID="perfil-whatsapp"
-            entering={FadeInDown.duration(450).delay(230)}
+            entering={FadeInDown.duration(450).delay(260)}
           >
             <View style={styles.linkIconWrap}>
               <Ionicons name="logo-whatsapp" size={18} color={colors.success} />
@@ -121,7 +149,7 @@ export default function PerfilTab() {
             style={styles.linkRow}
             onPress={() => router.push("/admin/login")}
             testID="perfil-admin-link"
-            entering={FadeInDown.duration(450).delay(300)}
+            entering={FadeInDown.duration(450).delay(320)}
           >
             <View style={styles.linkIconWrap}>
               <Ionicons name="lock-closed-outline" size={18} color={colors.brand} />
@@ -134,7 +162,7 @@ export default function PerfilTab() {
           </PressScale>
 
           <Animated.Text
-            entering={FadeInDown.duration(450).delay(380)}
+            entering={FadeInDown.duration(450).delay(400)}
             style={styles.footerNote}
           >
             Colunas da Casa de Deus · Projeto 2026
