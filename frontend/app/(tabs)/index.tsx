@@ -250,7 +250,8 @@ const styles = StyleSheet.create({
   projectTitle: {
     fontSize: font.size.xl,
     fontWeight: font.weight.black,
-    color: colors.onSurface,
+      color: colors.cardText,
+  lineHeight: 30,
     lineHeight: 30,
   },
   projectLead: {
