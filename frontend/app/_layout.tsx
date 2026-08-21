@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Text as RNText } from "react-native";
 import { useEffect } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import {
@@ -15,8 +15,36 @@ import {
 import { colors } from "@/src/lib/theme";
 import { AuthProvider } from "@/src/lib/auth";
 
-// Mantém a splash screen visível até as fontes carregarem
 SplashScreen.preventAutoHideAsync();
+
+// --- Aplica a Poppins automaticamente em todo <Text> do app, escolhendo ---
+// --- a variante certa (peso) sem precisar editar cada tela individualmente ---
+const weightToFont: Record<string, string> = {
+  "400": "Poppins_400Regular",
+  normal: "Poppins_400Regular",
+  "500": "Poppins_500Medium",
+  "600": "Poppins_600SemiBold",
+  "700": "Poppins_700Bold",
+  bold: "Poppins_700Bold",
+  "800": "Poppins_800ExtraBold",
+};
+
+const originalTextRender = (RNText as any).render;
+
+(RNText as any).render = function (props: any, ref: any) {
+  const flatStyle = StyleSheet.flatten(props.style) || {};
+  const fontWeight = flatStyle.fontWeight ? String(flatStyle.fontWeight) : "400";
+  const fontFamily = weightToFont[fontWeight] || "Poppins_400Regular";
+
+  const mergedStyle = [
+    { fontFamily: "Poppins_400Regular", color: colors.onSurface }, // padrão
+    props.style,                                                   // cor/estilo da tela (tem prioridade)
+    { fontFamily, fontWeight: "normal" as const },                 // força a variante certa da Poppins
+  ];
+
+  return originalTextRender.call(this, { ...props, style: mergedStyle }, ref);
+};
+// --- fim do patch ---
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -29,12 +57,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      // Libera a splash screen só quando a fonte carregou (ou falhou)
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
 
-  // Enquanto a fonte não carrega, não renderiza nada (evita "flash" da fonte padrão)
   if (!fontsLoaded && !fontError) {
     return null;
   }
