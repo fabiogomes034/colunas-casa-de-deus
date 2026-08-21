@@ -1,9 +1,8 @@
 import React from "react";
-import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
@@ -20,12 +19,16 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 function PressScale({
   children,
   onPress,
+  onLongPress,
+  delayLongPress,
   style,
   testID,
   entering,
 }: {
   children: React.ReactNode;
-  onPress: () => void;
+  onPress?: () => void;
+  onLongPress?: () => void;
+  delayLongPress?: number;
   style: any;
   testID?: string;
   entering?: any;
@@ -38,6 +41,8 @@ function PressScale({
   return (
     <AnimatedPressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={delayLongPress}
       onPressIn={() => {
         scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
       }}
@@ -67,17 +72,28 @@ export default function PerfilTab() {
     }
   };
 
+  // Toque e segure no logo (~1.5s) abre o acesso do Pastor, sem botão visível
+  const handleLogoLongPress = () => {
+    router.push("/admin/login");
+  };
+
   return (
     <ScreenBackground>
       <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.duration(500)} style={styles.header}>
-            <LinearGradient
-              colors={[colors.brandLight, colors.brand]}
-              style={styles.avatar}
+            <PressScale
+              style={styles.avatarWrap}
+              onLongPress={handleLogoLongPress}
+              delayLongPress={1500}
+              testID="perfil-logo-longpress"
             >
-              <Text style={styles.avatarText}>IVM</Text>
-            </LinearGradient>
+              <Image
+                source={require("../../assets/images/logo-app.png")}
+                style={styles.avatar}
+                resizeMode="contain"
+              />
+            </PressScale>
             <View>
               <Text style={styles.title}>Igreja Visão Missionária</Text>
               <Text style={styles.subtitle}>Sede Porto União</Text>
@@ -145,24 +161,8 @@ export default function PerfilTab() {
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
           </PressScale>
 
-          <PressScale
-            style={styles.linkRow}
-            onPress={() => router.push("/admin/login")}
-            testID="perfil-admin-link"
-            entering={FadeInDown.duration(450).delay(320)}
-          >
-            <View style={styles.linkIconWrap}>
-              <Ionicons name="lock-closed-outline" size={18} color={colors.brand} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.linkTitle}>Acesso do Pastor</Text>
-              <Text style={styles.linkSub}>Painel administrativo</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
-          </PressScale>
-
           <Animated.Text
-            entering={FadeInDown.duration(450).delay(400)}
+            entering={FadeInDown.duration(450).delay(340)}
             style={styles.footerNote}
           >
             Colunas da Casa de Deus · Projeto 2026
@@ -187,17 +187,18 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginBottom: spacing.sm,
   },
-  avatar: {
+  avatarWrap: {
     width: 52,
     height: 52,
     borderRadius: radius.lg,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+    backgroundColor: colors.card,
   },
-  avatarText: {
-    color: "#FFFFFF",
-    fontWeight: font.weight.black,
-    fontSize: font.size.sm,
+  avatar: {
+    width: "100%",
+    height: "100%",
   },
   title: {
     fontSize: font.size.lg,
