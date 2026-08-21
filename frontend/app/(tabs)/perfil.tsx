@@ -84,11 +84,28 @@ export default function PerfilTab() {
             </Text>
           </Animated.View>
 
+          {/* NOVO: acesso ao histórico de contribuições do membro */}
+          <PressScale
+            style={styles.linkRow}
+            onPress={() => router.push("/historico")}
+            testID="perfil-historico-link"
+            entering={FadeInDown.duration(450).delay(160)}
+          >
+            <View style={styles.linkIconWrap}>
+              <Ionicons name="time-outline" size={18} color={colors.brand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>Meu histórico</Text>
+              <Text style={styles.linkSub}>Suas contribuições ao longo do tempo</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
+          </PressScale>
+
           <PressScale
             style={styles.linkRow}
             onPress={() => Linking.openURL("https://wa.me/5541992246602")}
             testID="perfil-whatsapp"
-            entering={FadeInDown.duration(450).delay(200)}
+            entering={FadeInDown.duration(450).delay(230)}
           >
             <View style={styles.linkIconWrap}>
               <Ionicons name="logo-whatsapp" size={18} color={colors.success} />
@@ -104,7 +121,7 @@ export default function PerfilTab() {
             style={styles.linkRow}
             onPress={() => router.push("/admin/login")}
             testID="perfil-admin-link"
-            entering={FadeInDown.duration(450).delay(280)}
+            entering={FadeInDown.duration(450).delay(300)}
           >
             <View style={styles.linkIconWrap}>
               <Ionicons name="lock-closed-outline" size={18} color={colors.brand} />
@@ -117,7 +134,7 @@ export default function PerfilTab() {
           </PressScale>
 
           <Animated.Text
-            entering={FadeInDown.duration(450).delay(360)}
+            entering={FadeInDown.duration(450).delay(380)}
             style={styles.footerNote}
           >
             Colunas da Casa de Deus · Projeto 2026
