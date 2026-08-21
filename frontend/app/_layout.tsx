@@ -17,8 +17,8 @@ import { AuthProvider } from "@/src/lib/auth";
 
 SplashScreen.preventAutoHideAsync();
 
-// --- Aplica a Poppins automaticamente em todo <Text> do app, escolhendo ---
-// --- a variante certa (peso) sem precisar editar cada tela individualmente ---
+// --- Aplica a Poppins automaticamente em todo <Text> "comum" do app ---
+// --- mas NÃO mexe em textos que já têm fonte própria (ícones tipo Ionicons) ---
 const weightToFont: Record<string, string> = {
   "400": "Poppins_400Regular",
   normal: "Poppins_400Regular",
@@ -33,13 +33,19 @@ const originalTextRender = (RNText as any).render;
 
 (RNText as any).render = function (props: any, ref: any) {
   const flatStyle = StyleSheet.flatten(props.style) || {};
+
+  // Ícones (Ionicons, etc.) já definem sua própria fontFamily — não mexe neles
+  if (flatStyle.fontFamily) {
+    return originalTextRender.call(this, props, ref);
+  }
+
   const fontWeight = flatStyle.fontWeight ? String(flatStyle.fontWeight) : "400";
   const fontFamily = weightToFont[fontWeight] || "Poppins_400Regular";
 
   const mergedStyle = [
-    { fontFamily: "Poppins_400Regular", color: colors.onSurface }, // padrão
-    props.style,                                                   // cor/estilo da tela (tem prioridade)
-    { fontFamily, fontWeight: "normal" as const },                 // força a variante certa da Poppins
+    { color: colors.onSurface },
+    props.style,
+    { fontFamily, fontWeight: "normal" as const },
   ];
 
   return originalTextRender.call(this, { ...props, style: mergedStyle }, ref);
