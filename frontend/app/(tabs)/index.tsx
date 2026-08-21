@@ -250,14 +250,14 @@ const styles = StyleSheet.create({
   projectTitle: {
     fontSize: font.size.xl,
     fontWeight: font.weight.black,
-      color: colors.cardText,
-  lineHeight: 30,
+    color: colors.cardText,
     lineHeight: 30,
   },
   projectLead: {
-     color: colors.cardTextMuted,
-  lineHeight: 20,
-  marginTop: 8,
+    fontSize: font.size.sm,
+    color: colors.cardTextMuted,
+    lineHeight: 20,
+    marginTop: 8,
   },
   projectCta: {
     marginTop: spacing.lg,
@@ -320,12 +320,12 @@ const styles = StyleSheet.create({
   tierChipLabel: {
     fontSize: 11.5,
     fontWeight: font.weight.bold,
-    color: colors.onSurface,
+    color: colors.cardText,
   },
   tierChipPrice: {
     fontSize: 10.5,
     fontWeight: font.weight.medium,
-    color: colors.onSurfaceMuted,
+    color: colors.cardTextMuted,
   },
   verseCard: {
     flexDirection: "row",
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   verseText: {
-    color: colors.onSurfaceMuted,
+    color: colors.cardTextMuted,
     fontSize: font.size.xs,
     lineHeight: 18,
     fontStyle: "italic",
