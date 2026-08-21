@@ -1,9 +1,8 @@
 import React from "react";
-import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
@@ -16,18 +15,20 @@ import { colors, spacing, radius, font } from "@/src/lib/theme";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const APP_URL = "https://colunas-casa-de-deus.vercel.app";
-
 // Pressable com "afundada" suave ao tocar (spring)
 function PressScale({
   children,
   onPress,
+  onLongPress,
+  delayLongPress,
   style,
   testID,
   entering,
 }: {
   children: React.ReactNode;
-  onPress: () => void;
+  onPress?: () => void;
+  onLongPress?: () => void;
+  delayLongPress?: number;
   style: any;
   testID?: string;
   entering?: any;
@@ -40,6 +41,8 @@ function PressScale({
   return (
     <AnimatedPressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={delayLongPress}
       onPressIn={() => {
         scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
       }}
@@ -61,12 +64,17 @@ export default function PerfilTab() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Venha ser uma coluna da Igreja Visão Missionária! 🙏 Contribua mensalmente e acompanhe tudo por aqui: ${APP_URL}`,
-        url: APP_URL,
+        message:
+          "Conheça o app Colunas da Casa de Deus, da Igreja Visão Missionária - Sede Porto União: https://colunas-casa-de-deus.vercel.app",
       });
-    } catch (e) {
-      // Falha silenciosa: se o compartilhamento for cancelado ou não suportado, não bloqueia o app
+    } catch (error) {
+      // usuário cancelou ou houve erro no compartilhamento nativo
     }
+  };
+
+  // Toque e segure no logo (~1.5s) abre o acesso do Pastor, sem botão visível
+  const handleLogoLongPress = () => {
+    router.push("/admin/login");
   };
 
   return (
@@ -74,12 +82,18 @@ export default function PerfilTab() {
       <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.duration(500)} style={styles.header}>
-            <LinearGradient
-              colors={[colors.brandLight, colors.brand]}
-              style={styles.avatar}
+            <PressScale
+              style={styles.avatarWrap}
+              onLongPress={handleLogoLongPress}
+              delayLongPress={1500}
+              testID="perfil-logo-longpress"
             >
-              <Text style={styles.avatarText}>IVM</Text>
-            </LinearGradient>
+              <Image
+                source={require("../../assets/images/logo-app.png")}
+                style={styles.avatar}
+                resizeMode="contain"
+              />
+            </PressScale>
             <View>
               <Text style={styles.title}>Igreja Visão Missionária</Text>
               <Text style={styles.subtitle}>Sede Porto União</Text>
@@ -114,19 +128,19 @@ export default function PerfilTab() {
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
           </PressScale>
 
-          {/* NOVO: compartilhar o app com outros membros */}
+          {/* Compartilhar o app */}
           <PressScale
             style={styles.linkRow}
             onPress={handleShare}
             testID="perfil-share-link"
-            entering={FadeInDown.duration(450).delay(220)}
+            entering={FadeInDown.duration(450).delay(200)}
           >
             <View style={styles.linkIconWrap}>
               <Ionicons name="share-social-outline" size={18} color={colors.brand} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.linkTitle}>Compartilhar o app</Text>
-              <Text style={styles.linkSub}>Convide alguém para ser uma coluna</Text>
+              <Text style={styles.linkSub}>Convide outros membros a participar</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
           </PressScale>
@@ -135,7 +149,7 @@ export default function PerfilTab() {
             style={styles.linkRow}
             onPress={() => Linking.openURL("https://wa.me/5541992246602")}
             testID="perfil-whatsapp"
-            entering={FadeInDown.duration(450).delay(280)}
+            entering={FadeInDown.duration(450).delay(260)}
           >
             <View style={styles.linkIconWrap}>
               <Ionicons name="logo-whatsapp" size={18} color={colors.success} />
@@ -147,24 +161,8 @@ export default function PerfilTab() {
             <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
           </PressScale>
 
-          <PressScale
-            style={styles.linkRow}
-            onPress={() => router.push("/admin/login")}
-            testID="perfil-admin-link"
-            entering={FadeInDown.duration(450).delay(340)}
-          >
-            <View style={styles.linkIconWrap}>
-              <Ionicons name="lock-closed-outline" size={18} color={colors.brand} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.linkTitle}>Acesso do Pastor</Text>
-              <Text style={styles.linkSub}>Painel administrativo</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceLo} />
-          </PressScale>
-
           <Animated.Text
-            entering={FadeInDown.duration(450).delay(420)}
+            entering={FadeInDown.duration(450).delay(340)}
             style={styles.footerNote}
           >
             Colunas da Casa de Deus · Projeto 2026
@@ -189,17 +187,18 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginBottom: spacing.sm,
   },
-  avatar: {
+  avatarWrap: {
     width: 52,
     height: 52,
     borderRadius: radius.lg,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+    backgroundColor: colors.card,
   },
-  avatarText: {
-    color: "#FFFFFF",
-    fontWeight: font.weight.black,
-    fontSize: font.size.sm,
+  avatar: {
+    width: "100%",
+    height: "100%",
   },
   title: {
     fontSize: font.size.lg,
@@ -224,12 +223,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: font.size.sm,
     fontWeight: font.weight.bold,
-    color: colors.onSurface,
+    color: colors.cardText,
     marginBottom: 6,
   },
   cardText: {
     fontSize: font.size.sm,
-    color: colors.onSurfaceMuted,
+    color: colors.cardTextMuted,
     lineHeight: 20,
   },
   linkRow: {
@@ -256,11 +255,11 @@ const styles = StyleSheet.create({
   linkTitle: {
     fontSize: font.size.sm,
     fontWeight: font.weight.bold,
-    color: colors.onSurface,
+    color: colors.cardText,
   },
   linkSub: {
     fontSize: font.size.xs,
-    color: colors.onSurfaceMuted,
+    color: colors.cardTextMuted,
     marginTop: 1,
   },
   footerNote: {
