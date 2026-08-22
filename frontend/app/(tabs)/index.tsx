@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,6 +16,12 @@ import { ScreenBackground } from "@/src/components/ScreenBackground";
 import { colors, spacing, radius, font, tierMeta, formatBRL, TierKey } from "@/src/lib/theme";
 
 const NÍVEIS: TierKey[] = ["bronze", "prata", "ouro"];
+
+const tierIcon: Record<TierKey, keyof typeof Ionicons.glyphMap> = {
+  bronze: "shield-outline",
+  prata: "star-outline",
+  ouro: "trophy-outline",
+};
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -73,13 +79,12 @@ export default function Home() {
           {/* Cabeçalho compacto */}
           <Animated.View entering={FadeInDown.duration(500)} style={styles.header}>
             <View style={styles.headerLeft}>
-              <View style={styles.avatar}>
-                <Image
-                  source={require("../../assets/images/logo-app.png")}
-                  style={styles.avatarImage}
-                  resizeMode="contain"
-                />
-              </View>
+              <LinearGradient
+                colors={[colors.brandLight, colors.brand]}
+                style={styles.avatar}
+              >
+                <Text style={styles.avatarText}>IVM</Text>
+              </LinearGradient>
               <View>
                 <Text style={styles.eyebrow}>Sede Porto União</Text>
                 <Text style={styles.greeting}>Igreja Visão Missionária</Text>
@@ -136,9 +141,11 @@ export default function Home() {
                 >
                   <LinearGradient
                     colors={[item.lightColor, item.color]}
-                    style={styles.tierChipIcon}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.tierSquare, { shadowColor: item.color }]}
                   >
-                    <Text style={styles.tierChipLetter}>{key.charAt(0).toUpperCase()}</Text>
+                    <Ionicons name={tierIcon[key]} size={26} color="#FFFFFF" />
                   </LinearGradient>
                   <Text style={styles.tierChipLabel}>{item.label.replace("Coluna ", "")}</Text>
                   <Text style={styles.tierChipPrice}>{formatBRL(item.amount)}</Text>
@@ -194,12 +201,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
-    backgroundColor: colors.card,
   },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
+  avatarText: {
+    color: "#FFFFFF",
+    fontWeight: font.weight.black,
+    fontSize: 12,
   },
   eyebrow: {
     fontSize: 10.5,
@@ -219,7 +225,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    shadowColor: "#A3B1C6",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -234,7 +240,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: radius.xl,
     padding: spacing.lg,
-    shadowColor: "#A3B1C6",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 6, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 14,
@@ -250,12 +256,12 @@ const styles = StyleSheet.create({
   projectTitle: {
     fontSize: font.size.xl,
     fontWeight: font.weight.black,
-    color: colors.cardText,
+    color: colors.onSurface,
     lineHeight: 30,
   },
   projectLead: {
     fontSize: font.size.sm,
-    color: colors.cardTextMuted,
+    color: colors.onSurfaceMuted,
     lineHeight: 20,
     marginTop: 8,
   },
@@ -294,38 +300,31 @@ const styles = StyleSheet.create({
   },
   tierChip: {
     flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.sm,
-    alignItems: "flex-start",
-    gap: 6,
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 2,
+    alignItems: "center",
+    gap: 8,
   },
-  tierChipIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
+  tierSquare: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: radius.lg,
     alignItems: "center",
     justifyContent: "center",
-  },
-  tierChipLetter: {
-    color: "#FFFFFF",
-    fontWeight: font.weight.black,
-    fontSize: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 5,
   },
   tierChipLabel: {
-    fontSize: 11.5,
+    fontSize: 12.5,
     fontWeight: font.weight.bold,
-    color: colors.cardText,
+    color: colors.onSurface,
+    textAlign: "center",
   },
   tierChipPrice: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: font.weight.medium,
-    color: colors.cardTextMuted,
+    color: colors.onSurfaceMuted,
+    textAlign: "center",
   },
   verseCard: {
     flexDirection: "row",
@@ -334,7 +333,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.md,
     alignItems: "flex-start",
-    shadowColor: "#A3B1C6",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
@@ -350,7 +349,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   verseText: {
-    color: colors.cardTextMuted,
+    color: colors.onSurfaceMuted,
     fontSize: font.size.xs,
     lineHeight: 18,
     fontStyle: "italic",
